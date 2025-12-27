@@ -1,89 +1,91 @@
 import streamlit as st
 import pandas as pd
-import urllib.parse
 
 # 1. CONFIGURACIÓN DE PÁGINA
 st.set_page_config(page_title="Radar de Subvenciones BOE", layout="wide", page_icon="🚀")
 
-# 2. CONFIGURACIÓN DE DATOS (Tu ID real)
-SHEET_ID = "1XpsEMDFuvV-0fYM51ajDTdtZz21MGFp7t-M-bkrNpRk"
-SHEET_NAME = "Hoja 1"
+# 2. CONEXIÓN LIMPIA (Solo el ID, sin nombres de hoja para evitar errores)
+# Hemos limpiado el ID de cualquier espacio invisible con .strip()
+SHEET_ID = "1XpsEMDFuvV-0fYM51ajDTdtZz21MGFp7t-M-bkrNpRk".strip()
 
-# Esta parte arregla el error de "control characters" codificando el espacio
-query = urllib.parse.quote(SHEET_NAME)
-URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet={query}"
+# Usamos el formato de exportación directa a CSV, que es el más robusto
+URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv"
 
-# 3. CARGA DE DATOS CON CACHÉ
+# 3. FUNCIÓN DE CARGA
 @st.cache_data(ttl=300)
-def get_data():
+def load_data():
     try:
-        # Leemos el CSV directamente desde la URL corregida
+        # Cargamos los datos
         data = pd.read_csv(URL)
-        # Limpiamos los nombres de las columnas para evitar espacios invisibles
+        # Limpieza de nombres de columnas (quitar espacios en blanco)
         data.columns = [str(c).strip() for c in data.columns]
-        # Quitamos filas que no tengan título
+        # Eliminar filas donde el Título esté vacío
         data = data.dropna(subset=['Título'])
         return data
     except Exception as e:
-        return f"Error al leer el Excel: {str(e)}"
+        return f"Error al leer los datos: {str(e)}"
 
 # Ejecutar carga
-df = get_data()
+df = load_data()
 
 # --- INTERFAZ ---
 st.title("🚀 Radar de Subvenciones Inteligente")
 st.markdown("Oportunidades de negocio analizadas por IA directamente del BOE.")
+st.divider()
 
-# Si el resultado es un texto, es que ha habido un error
 if isinstance(df, str):
     st.error(df)
-    st.info("💡 Consejo: Asegúrate de que en Google Sheets la pestaña se llame exactamente 'Hoja 1' y el archivo sea público.")
+    st.info("Asegúrate de que el Google Sheets esté en 'Cualquier persona con el enlace' como Lector.")
 else:
-    # --- BARRA LATERAL (FILTROS) ---
+    # --- FILTROS LATERALES ---
     st.sidebar.header("Filtros")
     
     # Filtro Sector
-    sectores = sorted(df['Sector'].dropna().unique().tolist())
-    sector_sel = st.sidebar.multiselect("Filtrar Sector", sectores, default=sectores)
-    
-    # Filtro Probabilidad
-    probs = df['Probabilidad'].dropna().unique().tolist()
-    prob_sel = st.sidebar.multiselect("Filtrar Probabilidad", probs, default=probs)
+    if 'Sector' in df.columns:
+        sectores = sorted(df['Sector'].unique().tolist())
+        sec_sel = st.sidebar.multiselect("Filtrar por Sector", sectores, default=sectores)
+    else:
+        sec_sel = []
 
-    # Aplicar filtros
-    mask = df['Sector'].isin(sector_sel) & df['Probabilidad'].isin(prob_sel)
-    df_result = df[mask]
+    # Filtro Probabilidad
+    if 'Probabilidad' in df.columns:
+        probs = df['Probabilidad'].unique().tolist()
+        prob_sel = st.sidebar.multiselect("Filtrar por Probabilidad", probs, default=probs)
+    else:
+        prob_sel = []
+
+    # Aplicar Filtros
+    df_result = df[df['Sector'].isin(sec_sel) & df['Probabilidad'].isin(prob_sel)]
 
     st.subheader(f"🔍 {len(df_result)} subvenciones encontradas")
 
     # --- LISTADO ---
     for _, row in df_result.iterrows():
         with st.container(border=True):
-            c1, c2 = st.columns([4, 1])
-            with c1:
+            col1, col2 = st.columns([4, 1])
+            with col1:
                 st.subheader(row['Título'])
-                st.write(f"**💰 Cuantía:** {row['Cuantía']} | **📅 Plazo:** {row['Plazo']}")
-            with c2:
-                # Color según probabilidad
-                p = str(row['Probabilidad'])
+                st.write(f"**💰 Cuantía:** {row.get('Cuantía', 'N/A')} | **📅 Plazo:** {row.get('Plazo', 'N/A')}")
+            with col2:
+                p = str(row.get('Probabilidad', 'Media'))
                 color = "green" if "Alta" in p else "orange" if "Media" in p else "gray"
                 st.markdown(f"### :{color}[{p}]")
             
-            with st.expander("Ver análisis detallado y requisitos"):
-                col_a, col_b = st.columns(2)
-                with col_a:
+            with st.expander("Ver análisis y requisitos"):
+                ca, cb = st.columns(2)
+                with ca:
                     st.write("**Resumen:**")
-                    st.write(row.get('Resumen', 'No disponible'))
-                    st.write("**Oportunidad:**")
-                    st.write(row.get('Justificación', 'No disponible'))
-                with col_b:
+                    st.write(row.get('Resumen', 'Consultar en el BOE'))
+                    st.write("**Justificación:**")
+                    st.write(row.get('Justificación', 'Consultar en el BOE'))
+                with cb:
                     st.write("**Requisitos:**")
-                    st.write(row.get('Requisitos Detallados', 'No disponible'))
+                    st.write(row.get('Requisitos Detallados', 'Consultar en el BOE'))
                 
                 st.divider()
-                # Buscamos la URL en la columna ID o Enlace
-                url_final = row.get('ID', row.get('Enlace Directo', '#'))
-                st.link_button("🔗 Ver en el BOE", str(url_final))
+                # El enlace es la columna ID o 'Enlace Directo'
+                link = row.get('ID', '#')
+                st.link_button("🔗 Abrir enlace oficial", str(link))
 
 st.divider()
-st.caption("Actualizado automáticamente mediante n8n y Groq AI.")
+st.caption("Sistema automatizado con n8n y Groq AI.")
