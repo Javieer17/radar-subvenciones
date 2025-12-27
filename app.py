@@ -1,83 +1,99 @@
 import streamlit as st
 import pandas as pd
+import requests
+import io
 import re
 
 # 1. CONFIGURACIÓN DE PÁGINA
-st.set_page_config(page_title="Radar de Subvenciones", layout="wide", page_icon="🚀")
+st.set_page_config(page_title="Radar Subvenciones", layout="wide", page_icon="🚀")
 
-# 2. LIMPIEZA EXTREMA DEL ID
-# Copiamos el ID y le quitamos cualquier espacio o salto de línea invisible
-RAW_ID = "1XpsEMDFuvV-0fYM51ajDTdtZz21MGFp7t-M-bkrNpRk"
-CLEAN_ID = re.sub(r'[\s\t\n\r]', '', RAW_ID)
-
-# Construimos la URL de exportación directa (más fiable que la de consulta)
-url = f"https://docs.google.com/spreadsheets/d/{CLEAN_ID}/export?format=csv"
-# Limpiamos la URL final por si acaso
-url = "".join(url.split())
-
-# 3. CARGA DE DATOS
+# 2. FUNCIÓN PARA LIMPIAR Y CARGAR DATOS
 @st.cache_data(ttl=300)
-def load_data(url_to_load):
+def load_data_from_google():
+    # ID de tu Excel (limpiado de cualquier carácter raro)
+    sheet_id = "1XpsEMDFuvV-0fYM51ajDTdtZz21MGFp7t-M-bkrNpRk"
+    # Construimos la URL de exportación a CSV
+    raw_url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv"
+    
+    # LIMPIEZA EXTREMA: Borramos cualquier carácter invisible o de control
+    # Solo permitimos letras, números y símbolos de URL estándar
+    clean_url = re.sub(r'[^a-zA-Z0-9:/._?=&-]', '', raw_url)
+    
     try:
-        # Cargamos el CSV
-        data = pd.read_csv(url_to_load)
+        # Descargamos el contenido usando requests (más estable)
+        response = requests.get(clean_url, timeout=10)
+        response.raise_for_status() # Lanza error si no puede entrar
+        
+        # Convertimos el texto descargado en un DataFrame de Pandas
+        csv_data = io.StringIO(response.text)
+        df = pd.read_csv(csv_data)
+        
         # Limpiar nombres de columnas
-        data.columns = [str(c).strip() for c in data.columns]
-        # Quitar filas vacías
-        data = data.dropna(subset=['Título'])
-        return data
+        df.columns = [str(c).strip() for c in df.columns]
+        # Quitar filas sin título
+        df = df.dropna(subset=['Título'])
+        return df
     except Exception as e:
         return f"Error de conexión: {str(e)}"
 
-# Ejecutar
-df = load_data(url)
+# Ejecutar la carga
+df = load_data_from_google()
 
 # --- INTERFAZ ---
 st.title("🚀 Radar de Subvenciones Inteligente")
-st.markdown("Oportunidades detectadas por IA directamente del BOE.")
+st.markdown("Oportunidades analizadas por IA directamente del BOE.")
 st.divider()
 
 if isinstance(df, str):
-    st.error("⚠️ No se ha podido cargar el Excel")
+    st.error("⚠️ No se ha podido conectar con el Excel")
     st.write(f"Detalle técnico: {df}")
-    st.info("Revisa que en Google Sheets hayas dado a: Compartir > Cualquier persona con el enlace > Lector.")
+    st.info("Revisa: 1. Que el Excel sea público (Cualquier persona con el enlace > Lector). 2. Que no hayas cambiado el nombre de las columnas.")
 else:
-    # --- FILTROS ---
+    # --- FILTROS EN BARRA LATERAL ---
     st.sidebar.header("Filtros")
     
-    # Filtro Sector
-    col_sector = 'Sector' if 'Sector' in df.columns else df.columns[5] # Intento detectar la columna
-    sectores = sorted(df[col_sector].unique().tolist())
-    sec_sel = st.sidebar.multiselect("Sector", sectores, default=sectores)
+    # Sector
+    col_sector = 'Sector' if 'Sector' in df.columns else df.columns[5]
+    lista_sectores = sorted(df[col_sector].unique().tolist())
+    sec_sel = st.sidebar.multiselect("Filtrar por Sector", lista_sectores, default=lista_sectores)
 
-    # Filtro Probabilidad
+    # Probabilidad
     col_prob = 'Probabilidad' if 'Probabilidad' in df.columns else df.columns[-1]
-    probs = df[col_prob].unique().tolist()
-    prob_sel = st.sidebar.multiselect("Probabilidad", probs, default=probs)
+    lista_probs = df[col_prob].unique().tolist()
+    prob_sel = st.sidebar.multiselect("Probabilidad", lista_probs, default=lista_probs)
 
-    # Filtrar
-    df_result = df[df[col_sector].isin(sec_sel) & df[col_prob].isin(prob_sel)]
+    # Filtrado
+    df_final = df[df[col_sector].isin(sec_sel) & df[col_prob].isin(prob_sel)]
 
-    st.subheader(f"🔍 {len(df_result)} subvenciones encontradas")
+    st.subheader(f"🔍 {len(df_final)} subvenciones detectadas")
 
-    # --- LISTADO ---
-    for _, row in df_result.iterrows():
+    # --- LISTADO DE TARJETAS ---
+    for _, row in df_final.iterrows():
         with st.container(border=True):
             c1, c2 = st.columns([4, 1])
             with c1:
                 st.subheader(row['Título'])
-                st.write(f"**💰 Cuantía:** {row.get('Cuantía', 'Ver en BOE')} | **📅 Plazo:** {row.get('Plazo', 'Ver en BOE')}")
+                st.write(f"**💰 Cuantía:** {row.get('Cuantía', 'Ver BOE')} | **📅 Plazo:** {row.get('Plazo', 'Ver BOE')}")
             with c2:
                 p = str(row.get('Probabilidad', 'Media'))
                 color = "green" if "Alta" in p else "orange" if "Media" in p else "gray"
                 st.markdown(f"### :{color}[{p}]")
             
-            with st.expander("Ver análisis detallado"):
-                st.write("**Resumen:**", row.get('Resumen', 'Consultar enlace'))
-                st.write("**Justificación:**", row.get('Justificación', 'Consultar enlace'))
-                st.write("**Requisitos:**", row.get('Requisitos Detallados', 'Consultar enlace'))
+            with st.expander("Ver detalles y requisitos"):
+                ca, cb = st.columns(2)
+                with ca:
+                    st.write("**Resumen:**")
+                    st.write(row.get('Resumen', 'Consultar enlace'))
+                    st.write("**Oportunidad:**")
+                    st.write(row.get('Justificación', 'Consultar enlace'))
+                with cb:
+                    st.write("**Requisitos:**")
+                    st.write(row.get('Requisitos Detallados', 'Consultar enlace'))
+                
                 st.divider()
-                st.link_button("🔗 Abrir BOE", str(row.get('ID', '#')))
+                # El enlace al BOE
+                url_final = str(row.get('ID', '#'))
+                st.link_button("🔗 Abrir enlace del BOE", url_final)
 
 st.divider()
-st.caption("Hecho con n8n, Groq y Streamlit")
+st.caption("Automatizado con n8n, Groq y Streamlit")
