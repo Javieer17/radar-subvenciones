@@ -3,62 +3,83 @@ import pandas as pd
 import requests
 import io
 
-# 1. CONFIGURACIÓN
+# 1. CONFIGURACIÓN VISUAL
 st.set_page_config(page_title="Radar Subvenciones", layout="wide", page_icon="🚀")
 
-@st.cache_data(ttl=60)
-def load_data_diagnostic():
+@st.cache_data(ttl=30) # Cache de solo 30 segundos para pruebas
+def load_data_final():
     sheet_id = "1XpsEMDFuvV-0fYM51ajDTdtZz21MGFp7t-M-bkrNpRk"
-    # Esta URL exporta la primera hoja del Sheets
     url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv"
-    
     try:
         response = requests.get(url, timeout=10)
         response.raise_for_status()
-        # Leemos el CSV
         df = pd.read_csv(io.StringIO(response.text))
+        
+        # LIMPIEZA TOTAL DE COLUMNAS
+        # Quitamos espacios, tildes y ponemos en minúsculas para que no falle nada
+        df.columns = [str(c).strip().lower()
+                      .replace('á', 'a').replace('é', 'e')
+                      .replace('í', 'i').replace('ó', 'o')
+                      .replace('ú', 'u') for c in df.columns]
         return df
     except Exception as e:
-        return f"Error de conexión: {str(e)}"
+        return f"Error: {str(e)}"
 
-# Cargar datos
-df = load_data_diagnostic()
+# Cargar los datos
+df = load_data_final()
 
 st.title("🚀 Radar de Subvenciones Inteligente")
+st.markdown("Oportunidades del BOE analizadas por IA.")
 
 if isinstance(df, str):
-    st.error(f"No se pudo acceder al Google Sheets: {df}")
+    st.error(f"Error de conexión: {df}")
 else:
-    # --- BLOQUE DE DIAGNÓSTICO (Esto nos dirá qué está fallando) ---
-    st.write("### 🔍 Diagnóstico de datos")
-    st.write("Columnas detectadas:", df.columns.tolist())
+    # --- BUSCADOR DE COLUMNAS POR ORDEN (SISTEMA SEGURO) ---
+    # En lugar de nombres, usamos la posición según la lista que me has pasado
+    # ID(0), Título(1), Ámbito(2), Cuantía(3), Plazo(4), Sector(5), Resumen(6), Justificación(7), Requisitos(8), Probabilidad(9)
     
-    # Limpiar columnas: quitar espacios y posibles caracteres raros
-    df.columns = [str(c).strip() for c in df.columns]
+    try:
+        # Extraemos las columnas por posición para que no importe el nombre
+        # Usamos .iloc para mayor seguridad
+        for i in range(len(df)):
+            fila = df.iloc[i]
+            
+            with st.container(border=True):
+                col_izq, col_der = st.columns([4, 1])
+                
+                with col_izq:
+                    # Columna 1: Título
+                    st.subheader(fila.iloc[1])
+                    # Columna 3: Cuantía | Columna 4: Plazo
+                    st.write(f"**💰 Cuantía:** {fila.iloc[3]} | **📅 Plazo:** {fila.iloc[4]}")
+                    # Columna 5: Sector
+                    st.write(f"**🏢 Sector:** {fila.iloc[5]}")
+                
+                with col_der:
+                    # Columna 9: Probabilidad
+                    p = str(fila.iloc[9]).lower()
+                    color = "green" if "alta" in p else "orange" if "med" in p else "gray"
+                    st.markdown(f"### :{color}[{fila.iloc[9]}]")
 
-    # Buscar columnas clave (por si tienen nombres ligeramente diferentes)
-    col_titulo = next((c for c in df.columns if 'tit' in c.lower()), None)
-    
-    if not col_titulo:
-        st.error("❌ No encuentro la columna 'Título'. Mira arriba la lista de 'Columnas detectadas' y comprueba cómo se llaman en el Excel.")
-        st.write("Vista previa de los datos recibidos:", df.head(3))
-    else:
-        st.success(f"✅ Columna '{col_titulo}' encontrada. Cargando subvenciones...")
-        
-        # --- LISTADO DE SUBVENCIONES ---
-        for index, row in df.iterrows():
-            # Solo mostramos si tiene título
-            if pd.notna(row[col_titulo]):
-                with st.container(border=True):
-                    st.subheader(row[col_titulo])
+                with st.expander("🔍 Ver análisis detallado y requisitos"):
+                    c1, c2 = st.columns(2)
+                    with c1:
+                        st.write("**Resumen:**")
+                        st.write(fila.iloc[6]) # Columna 6
+                        st.write("**Oportunidad:**")
+                        st.write(fila.iloc[7]) # Columna 7
+                    with c2:
+                        st.write("**Requisitos:**")
+                        st.write(fila.iloc[8]) # Columna 8
                     
-                    # Intentamos mostrar datos si existen esas columnas
-                    resumen = row.get('Resumen', 'Sin resumen disponible')
-                    st.write(f"**Resumen:** {resumen}")
+                    st.divider()
+                    # Columna 0: ID (Enlace)
+                    st.link_button("🔗 Abrir en el BOE", str(fila.iloc[0]))
                     
-                    # Enlace al BOE
-                    link = row.get('ID', '#')
-                    st.link_button("🔗 Ver en el BOE", str(link))
+    except Exception as e:
+        st.warning("Hay un problema con el formato de las filas.")
+        st.write("Columnas que veo:", df.columns.tolist())
+        st.write("Error:", e)
 
 st.divider()
-st.caption("Sistema Radar v1.0 - n8n + Streamlit")
+st.caption("Radar v2.0 - Funcionando sin depender de nombres de columnas")
