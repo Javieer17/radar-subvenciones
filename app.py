@@ -5,7 +5,7 @@ import io
 
 # 1. CONFIGURACIÓN DE PÁGINA
 st.set_page_config(
-    page_title="Radar Subvenciones AI v21.0",
+    page_title="Radar Subvenciones AI v22.0",
     page_icon="⚡",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -28,7 +28,7 @@ def check_password():
 
 if check_password():
 
-    # --- DISEÑO CSS "HYBRID MASTER" (TU HOVER FAVORITO + ESTRUCTURA NUEVA) ---
+    # --- DISEÑO CSS "HYBRID MASTER" (TU FAVORITO) ---
     st.markdown("""
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;800&display=swap');
@@ -36,19 +36,17 @@ if check_password():
         /* 1. FONDO GLOBAL */
         .stApp { background-color: #050505 !important; }
         
-        /* 2. TEXTOS SIEMPRE VISIBLES (Arreglo de lectura) */
+        /* 2. TEXTOS SIEMPRE VISIBLES */
         p, .stMarkdown, .stMarkdown p, li, span, div {
             color: #e6edf3 !important;
         }
         
         /* 3. LA TARJETA (Tu diseño favorito recuperado) */
         div[data-testid="stVerticalBlockBorderWrapper"] {
-            /* El gradiente que te gustaba */
             background: linear-gradient(145deg, #1d2129 0%, #161b22 100%) !important;
             border-radius: 20px !important;
             border: 1px solid rgba(255, 255, 255, 0.1) !important;
             padding: 0px !important;
-            /* La sombra base original */
             box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
             transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
             margin-bottom: 30px !important;
@@ -57,13 +55,9 @@ if check_password():
         
         /* 4. EL EFECTO HOVER EXACTO (Azuliza + Levanta) */
         div[data-testid="stVerticalBlockBorderWrapper"]:hover {
-            /* Escala al 1.02 como pediste */
             transform: scale(1.02) !important;
-            /* Borde azul */
             border-color: #58a6ff !important;
-            /* Sombra azulada específica */
             box-shadow: 0 15px 40px rgba(88, 166, 255, 0.2) !important;
-            /* Efecto "azuliza": cambiamos ligeramente el gradiente de fondo */
             background: linear-gradient(145deg, #1d2129 0%, #232d3d 100%) !important;
             cursor: pointer;
             z-index: 10;
@@ -75,13 +69,12 @@ if check_password():
             height: 230px;
             background-size: cover;
             background-position: center;
-            border-radius: 20px 20px 0 0; /* Coincide con la tarjeta */
+            border-radius: 20px 20px 0 0;
             margin-top: -1px;
             border-bottom: 1px solid rgba(255,255,255,0.05);
             transition: 0.3s;
         }
         
-        /* Brillo en la foto al pasar el ratón */
         div[data-testid="stVerticalBlockBorderWrapper"]:hover .header-box {
             filter: brightness(1.1) saturate(1.1);
         }
@@ -115,7 +108,7 @@ if check_password():
             border: 1px solid rgba(255,255,255,0.1);
         }
 
-        /* Datos centrados (Estilo Apple Dark) */
+        /* Datos centrados */
         .info-pill {
             background: rgba(0,0,0,0.3);
             border-radius: 12px;
@@ -171,40 +164,28 @@ if check_password():
     # 3. COLORES DE TAGS
     def get_tag_color(tag):
         t = tag.lower()
-        if "next" in t: return "#2563eb" # Azul Real
-        if "subvenc" in t: return "#16a34a" # Verde
-        if "prestamo" in t: return "#dc2626" # Rojo
-        return "#475569" # Gris
+        if "next" in t: return "#2563eb" 
+        if "subvenc" in t: return "#16a34a" 
+        if "prestamo" in t: return "#dc2626" 
+        return "#475569"
 
-    # 4. IMÁGENES ACTUALIZADAS (Lista "Indestructible")
+    # 4. IMÁGENES A PRUEBA DE BOMBAS (Usamos Picsum, que nunca falla)
     def get_sector_image(sector, titulo):
         combined = (str(sector) + " " + str(titulo)).lower()
         
-        # IDs de Unsplash verificados que funcionan bien en incrustación
-        ids = {
-            'dana': '1582213726461-8decb21c5763',     # Manos unidas (Comunidad)
-            'univ': '1523240715630-341b21391307',     # Libros/Universidad
-            'solar': '1508514177221-188b1cf16e9d',    # Panel Solar
-            'eolic': '1466611653911-954ff21b6724',    # Molinos
-            'indus': '1581091226825-a6a2a5aee158',    # Industria metal
-            'digital': '1518770660439-4636190af475',  # Chips/Tech
-            'agri': '1625246333195-78d9c38ad449',     # Campo
-            'transp': '1553265027-99d530167b28',      # Coche eléctrico
-            'global': '1451187580459-43490279c0fa'    # Tech azul general
-        }
+        # Palabras clave para generar semillas únicas
+        seed = "tech"
+        if 'dana' in combined: seed = "community"
+        elif any(x in combined for x in ['univ', 'lector', 'beca']): seed = "library"
+        elif any(x in combined for x in ['solar', 'placa', 'energ']): seed = "solarpanel"
+        elif 'eolic' in combined: seed = "windmill"
+        elif any(x in combined for x in ['indust', 'fabrica']): seed = "factory"
+        elif any(x in combined for x in ['digital', 'tic', 'soft']): seed = "code"
+        elif any(x in combined for x in ['agro', 'campo']): seed = "farm"
+        elif any(x in combined for x in ['coche', 'movilidad', 'transporte']): seed = "electriccar"
         
-        img = ids['global']
-        if 'dana' in combined: img = ids['dana']
-        elif any(x in combined for x in ['univ', 'lector', 'beca', 'curso']): img = ids['univ']
-        elif any(x in combined for x in ['solar', 'placa', 'energ']): img = ids['solar']
-        elif 'eolic' in combined: img = ids['eolic']
-        elif any(x in combined for x in ['indust', 'fabrica', 'manufactura']): img = ids['indus']
-        elif any(x in combined for x in ['digital', 'tic', 'soft']): img = ids['digital']
-        elif any(x in combined for x in ['agro', 'campo']): img = ids['agri']
-        elif any(x in combined for x in ['coche', 'movilidad', 'transporte']): img = ids['transp']
-        
-        # Usamos parámetros de optimización para asegurar carga rápida
-        return f"https://images.unsplash.com/photo-{img}?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80"
+        # Usamos Picsum Photos que genera imágenes estables y rápidas
+        return f"https://picsum.photos/seed/{seed}/800/250"
 
     df = load_data()
 
@@ -271,4 +252,4 @@ if check_password():
                     
                     st.markdown('</div>', unsafe_allow_html=True)
 
-    st.caption("Radar v21.0 • Hybrid Master Edition • 2025")
+    st.caption("Radar v22.0 • Bulletproof Edition • 2025")
