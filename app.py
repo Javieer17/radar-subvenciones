@@ -7,7 +7,7 @@ import io
 # 1. CONFIGURACIÓN DEL MOTOR
 # ==============================================================================
 st.set_page_config(
-    page_title="Radar Subvenciones | TITAL¡N",
+    page_title="Radar Subvenciones | TITAN",
     page_icon="💠",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -241,7 +241,7 @@ if check_password():
     c_head, c_search = st.columns([1, 1])
     with c_head:
         # El color del título cambia con CSS var(--text-title)
-        st.markdown("<h1 style='margin:0; font-size:32px;'>📡 RADAR <span style='color:var(--accent-color)'>AI</span></h1>", unsafe_allow_html=True)
+        st.markdown("<h1 style='margin:0; font-size:32px;'>💠 RADAR <span style='color:var(--accent-color)'>TITAN</span></h1>", unsafe_allow_html=True)
     with c_search:
         st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
         query = st.text_input("", placeholder="🔍 Buscar oportunidad...", label_visibility="collapsed")
@@ -294,3 +294,4 @@ if check_password():
                     st.link_button("🔗 ACCEDER AL BOE", str(row.iloc[0]), use_container_width=True)
                 st.write("") 
     else: st.error("DATABASE ERROR")
+
