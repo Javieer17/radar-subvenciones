@@ -174,7 +174,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==============================================================================
-# 3. SEGURIDAD (SIMPLE Y ROBUSTA)
+# 3. SEGURIDAD
 # ==============================================================================
 def check_password():
     if "password_correct" not in st.session_state:
@@ -190,7 +190,7 @@ def check_password():
     if not st.session_state["password_correct"]:
         c1, c2, c3 = st.columns([1,2,1])
         with c2:
-            st.markdown("<br><br><h1 style='text-align: center; color: #00f2ff;'>🛡️ TITAN SECURITY</h1>", unsafe_allow_html=True)
+            st.markdown("<br><br><h1 style='text-align: center; color: #00f2ff;'> CLAVE DE ACCESO:</h1>", unsafe_allow_html=True)
             st.text_input("ACCESS CODE", type="password", on_change=password_entered, key="password")
             st.markdown("<p style='text-align: center; color: #444; font-size: 12px;'>SYSTEM LOCKED • AUTHORIZED PERSONNEL ONLY</p>", unsafe_allow_html=True)
         return False
@@ -217,25 +217,54 @@ def get_tag_bg(tag):
     if "subvenc" in t: return "linear-gradient(90deg, #134E5E, #71B280)" # Verde esmeralda
     return "linear-gradient(90deg, #232526, #414345)" # Gris metal
 
-# Helper para imágenes fiables (Picsum con semilla)
+# -------------------------------------------------------------
+# 5. LÓGICA DE IMÁGENES SEMÁNTICAS (LO QUE PEDÍAS)
+# -------------------------------------------------------------
 def get_img_url(sector, titulo):
-    # Generamos una semilla basada en el texto para que la foto sea siempre la misma para la misma fila
-    # pero diferente entre filas.
-    combined = (str(sector) + str(titulo)).lower()
-    keyword = "business"
-    if "agro" in combined: keyword = "nature"
-    elif "tech" in combined or "digital" in combined: keyword = "computer"
-    elif "indus" in combined: keyword = "factory"
-    elif "solar" in combined: keyword = "sun"
-    elif "coche" in combined: keyword = "car"
-    elif "univ" in combined: keyword = "books"
+    # Unificamos texto para buscar palabras clave
+    combined = (str(sector) + " " + str(titulo)).lower()
     
-    # Usamos picsum con seed para estabilidad total
-    seed = hash(combined) % 1000
-    return f"https://picsum.photos/id/{seed}/800/400"
+    # IDs FIJOS de Unsplash que sabemos que son bonitos y encajan con el tema
+    # Usamos parámetros 'auto=format&fit=crop&w=800&q=80' para que carguen rápido y bien
+    
+    # DANA / Social / Ayuda
+    if any(x in combined for x in ['dana', 'catastrofe', 'social', 'tercer sector', 'vulnerable', 'ayuda']):
+        return "https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&w=800&q=80" # Manos unidas
+        
+    # Energía Solar
+    elif any(x in combined for x in ['solar', 'fotovoltaica', 'autoconsumo', 'placa']):
+        return "https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&w=800&q=80" # Paneles solares
+        
+    # Energía Eólica
+    elif any(x in combined for x in ['eolic', 'viento', 'aerogenerador']):
+        return "https://images.unsplash.com/photo-1466611653911-954ff21b6724?auto=format&fit=crop&w=800&q=80" # Molinos
+        
+    # Industria
+    elif any(x in combined for x in ['industr', 'fabrica', 'manufact', 'pyme', 'prod']):
+        return "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=80" # Fabrica moderna
+        
+    # Tecnología / Digital
+    elif any(x in combined for x in ['digital', 'tic', 'software', 'ia', 'cyber', 'tecnol']):
+        return "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80" # Chip/Tecnología
+        
+    # Agricultura
+    elif any(x in combined for x in ['agro', 'campo', 'rural', 'ganad', 'pesca']):
+        return "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?auto=format&fit=crop&w=800&q=80" # Tractor/Campo
+        
+    # Movilidad / Coches
+    elif any(x in combined for x in ['coche', 'vehicul', 'transporte', 'movilidad', 'moves']):
+        return "https://images.unsplash.com/photo-1553265027-99d530167b28?auto=format&fit=crop&w=800&q=80" # Carga coche eléctrico
+        
+    # Educación / Universidad
+    elif any(x in combined for x in ['univ', 'beca', 'educacion', 'investigacion', 'doctor', 'maec']):
+        return "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=800&q=80" # Biblioteca
+        
+    # Default (Genérico Tecnológico Azul)
+    else:
+        return "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80"
 
 # ==============================================================================
-# 5. UI PRINCIPAL
+# 6. UI PRINCIPAL
 # ==============================================================================
 if check_password():
     
@@ -257,18 +286,19 @@ if check_password():
             df = df[df.apply(lambda r: r.astype(str).str.contains(query, case=False).any(), axis=1)]
 
         # --- GRID RENDER ---
-        # Usamos 2 columnas anchas
         cols = st.columns(2)
         
         for i, row in df.iterrows():
             if pd.isna(row.iloc[1]): continue
             
-            # Preparar datos para HTML
+            # Preparar datos
             titulo = row.iloc[1]
             tags_raw = str(row.iloc[2]).split('|')
             tags_html = "".join([f"<span class='t-tag' style='background: {get_tag_bg(t.strip())}'>{t.strip()}</span>" for t in tags_raw])
             cuantia = row.iloc[3]
             plazo = row.iloc[4]
+            
+            # --- AQUÍ LLAMAMOS A LA FUNCIÓN DE FOTOS CORREGIDA ---
             img_url = get_img_url(row.iloc[5], titulo)
             
             # Badge probabilidad
@@ -276,7 +306,7 @@ if check_password():
             color_prob = "#00f2ff" if "Alta" in prob else "#ffcc00"
             badge_html = f"<div class='titan-badge' style='color:{color_prob}; border-color:{color_prob};'>● {prob.upper()}</div>"
 
-            # HTML CARD COMPLETA (Esto garantiza el diseño perfecto)
+            # HTML CARD (Diseño TITAN)
             html_card = f"""
             <div class="titan-card">
                 {badge_html}
@@ -298,13 +328,10 @@ if check_password():
             </div>
             """
 
-            # Renderizar en columna
+            # Render
             with cols[i % 2]:
-                # 1. Pintamos la tarjeta visual (HTML puro, sin márgenes de Streamlit)
                 st.markdown(html_card, unsafe_allow_html=True)
                 
-                # 2. Funcionalidad de Streamlit (Expander) pegada abajo
-                # El CSS se encarga de que parezca una sola pieza
                 with st.expander("🔻 ESTRATEGIA Y ACCESO"):
                     st.markdown("#### 🧠 Análisis IA")
                     st.write(row.iloc[6])
@@ -313,7 +340,7 @@ if check_password():
                     st.markdown("<br>", unsafe_allow_html=True)
                     st.link_button("🔗 ACCEDER AL BOE", str(row.iloc[0]), use_container_width=True)
                 
-                st.write("") # Espacio entre filas
+                st.write("") 
 
     else:
         st.error("DATABASE CONNECTION FAILED.")
