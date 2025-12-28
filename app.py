@@ -5,8 +5,8 @@ import io
 
 # 1. CONFIGURACIÓN DE PÁGINA
 st.set_page_config(
-    page_title="Radar Subvenciones v20.0",
-    page_icon="💎",
+    page_title="Radar Subvenciones AI v21.0",
+    page_icon="⚡",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
@@ -28,63 +28,65 @@ def check_password():
 
 if check_password():
 
-    # --- DISEÑO CSS "NIGHT VISION" (TEXTOS BLANCOS + HOVER AZUL) ---
+    # --- DISEÑO CSS "HYBRID MASTER" (TU HOVER FAVORITO + ESTRUCTURA NUEVA) ---
     st.markdown("""
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;800&display=swap');
         
-        /* 1. FORZAR FONDO Y TEXTOS GLOBALES */
+        /* 1. FONDO GLOBAL */
         .stApp { background-color: #050505 !important; }
         
-        /* ESTO ARREGLA LA LECTURA: Fuerza todo el texto a blanco/gris claro */
+        /* 2. TEXTOS SIEMPRE VISIBLES (Arreglo de lectura) */
         p, .stMarkdown, .stMarkdown p, li, span, div {
             color: #e6edf3 !important;
         }
         
-        /* 2. LA TARJETA (BURBUJA) */
+        /* 3. LA TARJETA (Tu diseño favorito recuperado) */
         div[data-testid="stVerticalBlockBorderWrapper"] {
-            background-color: #121417 !important; /* Negro suave base */
-            border-radius: 25px !important;
-            border: 1px solid rgba(255,255,255,0.08) !important;
+            /* El gradiente que te gustaba */
+            background: linear-gradient(145deg, #1d2129 0%, #161b22 100%) !important;
+            border-radius: 20px !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
             padding: 0px !important;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important;
-            transition: all 0.3s ease-in-out !important;
+            /* La sombra base original */
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
             margin-bottom: 30px !important;
             overflow: hidden !important;
         }
         
-        /* 3. EL EFECTO HOVER (El que querías) */
+        /* 4. EL EFECTO HOVER EXACTO (Azuliza + Levanta) */
         div[data-testid="stVerticalBlockBorderWrapper"]:hover {
-            /* Cambio de color de fondo a un Azul Noche */
-            background-color: #161b26 !important; 
-            /* Borde Cian */
-            border-color: #00f2ff !important; 
-            /* Se levanta */
-            transform: translateY(-8px) scale(1.01) !important; 
-            /* Resplandor Azul */
-            box-shadow: 0 0 30px rgba(0, 242, 255, 0.15) !important;
+            /* Escala al 1.02 como pediste */
+            transform: scale(1.02) !important;
+            /* Borde azul */
+            border-color: #58a6ff !important;
+            /* Sombra azulada específica */
+            box-shadow: 0 15px 40px rgba(88, 166, 255, 0.2) !important;
+            /* Efecto "azuliza": cambiamos ligeramente el gradiente de fondo */
+            background: linear-gradient(145deg, #1d2129 0%, #232d3d 100%) !important;
             cursor: pointer;
+            z-index: 10;
         }
 
-        /* 4. IMAGEN DE CABECERA (Ajuste perfecto) */
+        /* 5. FOTO DE CABECERA INTEGRADA */
         .header-box {
             width: 100%;
             height: 230px;
             background-size: cover;
             background-position: center;
-            border-radius: 25px 25px 0 0;
+            border-radius: 20px 20px 0 0; /* Coincide con la tarjeta */
             margin-top: -1px;
             border-bottom: 1px solid rgba(255,255,255,0.05);
-            /* Filtro oscuro para que las letras resalten si van encima */
-            filter: brightness(0.9);
             transition: 0.3s;
         }
         
+        /* Brillo en la foto al pasar el ratón */
         div[data-testid="stVerticalBlockBorderWrapper"]:hover .header-box {
-            filter: brightness(1.1); /* Se ilumina la foto al pasar el ratón */
+            filter: brightness(1.1) saturate(1.1);
         }
 
-        /* 5. CONTENIDO INTERNO */
+        /* 6. CONTENIDO INTERNO */
         .card-body {
             padding: 25px;
         }
@@ -96,7 +98,6 @@ if check_password():
             font-weight: 800 !important;
             line-height: 1.3;
             margin-bottom: 15px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
         }
 
         /* Tags */
@@ -114,7 +115,7 @@ if check_password():
             border: 1px solid rgba(255,255,255,0.1);
         }
 
-        /* Cajas de Datos (Estilo Apple Dark) */
+        /* Datos centrados (Estilo Apple Dark) */
         .info-pill {
             background: rgba(0,0,0,0.3);
             border-radius: 12px;
@@ -124,7 +125,7 @@ if check_password():
         }
         
         .info-label { 
-            color: #94a3b8 !important; /* Gris azulado para etiqueta */
+            color: #94a3b8 !important; 
             font-size: 10px !important; 
             font-weight: 700 !important; 
             text-transform: uppercase; 
@@ -132,26 +133,24 @@ if check_password():
             margin-bottom: 4px !important;
         }
         .info-value { 
-            color: #38bdf8 !important; /* Azul cielo para el valor */
+            color: #38bdf8 !important; 
             font-size: 18px !important; 
             font-weight: 800 !important; 
             margin: 0 !important;
         }
 
-        /* 6. ARREGLO DEL EXPANDER (Texto Blanco) */
+        /* Expander Arreglado */
         .stExpander {
             background-color: rgba(255,255,255,0.02) !important;
             border: 1px solid rgba(255,255,255,0.1) !important;
             border-radius: 15px !important;
         }
         
-        /* Forzamos el texto dentro del expander a ser blanco */
         .streamlit-expanderContent p, .streamlit-expanderContent li {
-            color: #d1d5db !important; /* Blanco grisaceo muy legible */
+            color: #d1d5db !important;
             font-size: 15px !important;
         }
         
-        /* Ocultar menú */
         #MainMenu {visibility: hidden;}
         footer {visibility: hidden;}
         </style>
@@ -177,33 +176,40 @@ if check_password():
         if "prestamo" in t: return "#dc2626" # Rojo
         return "#475569" # Gris
 
-    # 4. IMÁGENES (Nuevas URLs Estables)
+    # 4. IMÁGENES ACTUALIZADAS (Lista "Indestructible")
     def get_sector_image(sector, titulo):
         combined = (str(sector) + " " + str(titulo)).lower()
         
-        # Fotos nuevas de alta calidad
+        # IDs de Unsplash verificados que funcionan bien en incrustación
         ids = {
-            'dana': '1636561842959-b3974c2cb01d', # Ayuda/Manos
-            'univ': '1523050853173-ee040a84139b', # Universidad/Libros
-            'tech': '1550751827-4bd374c3f58b',    # Tech General (Azul)
-            'solar': '1508514177221-188b1cf16e9d', # Panel Solar Moderno
-            'indus': '1531297461362-76ce3843087d', # Fabrica
-            'digital': '1451187580459-43490279c0fa' # Red Digital
+            'dana': '1582213726461-8decb21c5763',     # Manos unidas (Comunidad)
+            'univ': '1523240715630-341b21391307',     # Libros/Universidad
+            'solar': '1508514177221-188b1cf16e9d',    # Panel Solar
+            'eolic': '1466611653911-954ff21b6724',    # Molinos
+            'indus': '1581091226825-a6a2a5aee158',    # Industria metal
+            'digital': '1518770660439-4636190af475',  # Chips/Tech
+            'agri': '1625246333195-78d9c38ad449',     # Campo
+            'transp': '1553265027-99d530167b28',      # Coche eléctrico
+            'global': '1451187580459-43490279c0fa'    # Tech azul general
         }
         
-        img = ids['tech']
+        img = ids['global']
         if 'dana' in combined: img = ids['dana']
-        elif any(x in combined for x in ['univ', 'lector', 'beca']): img = ids['univ']
+        elif any(x in combined for x in ['univ', 'lector', 'beca', 'curso']): img = ids['univ']
         elif any(x in combined for x in ['solar', 'placa', 'energ']): img = ids['solar']
-        elif any(x in combined for x in ['indus', 'fabrica']): img = ids['indus']
+        elif 'eolic' in combined: img = ids['eolic']
+        elif any(x in combined for x in ['indust', 'fabrica', 'manufactura']): img = ids['indus']
         elif any(x in combined for x in ['digital', 'tic', 'soft']): img = ids['digital']
+        elif any(x in combined for x in ['agro', 'campo']): img = ids['agri']
+        elif any(x in combined for x in ['coche', 'movilidad', 'transporte']): img = ids['transp']
         
-        return f"https://images.unsplash.com/photo-{img}?q=80&w=1000&auto=format&fit=crop"
+        # Usamos parámetros de optimización para asegurar carga rápida
+        return f"https://images.unsplash.com/photo-{img}?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80"
 
     df = load_data()
 
-    # --- UI ---
-    st.markdown("<h1 style='color: #00f2ff; font-weight: 900; letter-spacing: -1px;'>📡 Radar Inteligente</h1>", unsafe_allow_html=True)
+    # --- UI PRINCIPAL ---
+    st.markdown("<h1 style='color: #58a6ff; font-weight: 900; letter-spacing: -1px;'>📡 Radar Inteligente</h1>", unsafe_allow_html=True)
     query = st.text_input("🔍 FILTRAR RESULTADOS", placeholder="Buscar...")
 
     if df is not None:
@@ -217,7 +223,7 @@ if check_password():
             
             with cols[i % 2]:
                 with st.container(border=True):
-                    # FOTO
+                    # FOTO INTEGRADA
                     img_url = get_sector_image(fila.iloc[5], fila.iloc[1])
                     st.markdown(f'<div class="header-box" style="background-image: url(\'{img_url}\');"></div>', unsafe_allow_html=True)
                     
@@ -237,7 +243,7 @@ if check_password():
                     tags_html = "".join([f'<span class="tag-pill" style="background:{get_tag_color(t.strip())};">{t.strip()}</span>' for t in tags])
                     st.markdown(f'<div style="margin-bottom: 20px;">{tags_html}</div>', unsafe_allow_html=True)
                     
-                    # Expander
+                    # Expander (Texto legible)
                     with st.expander("🚀 VER DETALLES Y ESTRATEGIA"):
                         st.markdown("**Resumen Ejecutivo:**")
                         st.write(fila.iloc[6])
@@ -245,7 +251,7 @@ if check_password():
                         st.write(fila.iloc[8])
                         st.link_button("🔗 VER BOE OFICIAL", str(fila.iloc[0]), use_container_width=True)
                     
-                    # Datos
+                    # Datos Abajo (Alineados)
                     st.write("")
                     c_1, c_2 = st.columns(2)
                     with c_1:
@@ -265,4 +271,4 @@ if check_password():
                     
                     st.markdown('</div>', unsafe_allow_html=True)
 
-    st.caption("Radar v20.0 • Text Fix Edition • 2025")
+    st.caption("Radar v21.0 • Hybrid Master Edition • 2025")
