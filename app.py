@@ -211,4 +211,36 @@ if check_password():
                     st.markdown(f'<div class="sub-title">{fila.iloc[1]}</div>', unsafe_allow_html=True)
                     
                     # Tags
-                    tags = str(fila.ilo
+                    tags = str(fila.iloc[2]).split('|')
+                    tags_html = "".join([f'<span class="tag-pill" style="background:{get_tag_color(t.strip())};">{t.strip()}</span>' for t in tags])
+                    st.markdown(f'<div style="margin-bottom: 20px;">{tags_html}</div>', unsafe_allow_html=True)
+                    
+                    # Expander
+                    with st.expander("🚀 ANALIZAR OPORTUNIDAD"):
+                        st.markdown("**Resumen:**")
+                        st.write(fila.iloc[6])
+                        st.info(f"**Justificación:** {fila.iloc[7]}")
+                        st.write(fila.iloc[8])
+                        st.link_button("🔗 VER BOE", str(fila.iloc[0]), use_container_width=True)
+                    
+                    # Datos Abajo
+                    st.write("")
+                    c_1, c_2 = st.columns(2)
+                    with c_1:
+                        st.markdown(f'''
+                            <div class="info-pill">
+                                <p class="info-label">💰 Cuantía</p>
+                                <p class="info-value">{fila.iloc[3]}</p>
+                            </div>
+                        ''', unsafe_allow_html=True)
+                    with c_2:
+                        st.markdown(f'''
+                            <div class="info-pill">
+                                <p class="info-label">⏳ Plazo</p>
+                                <p class="info-value">{fila.iloc[4]}</p>
+                            </div>
+                        ''', unsafe_allow_html=True)
+                    
+                    st.markdown('</div>', unsafe_allow_html=True)
+
+    st.caption("Radar Terminal v19.0 • Visual Repair • 2025")
