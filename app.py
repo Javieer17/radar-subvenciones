@@ -5,8 +5,8 @@ import io
 
 # 1. CONFIGURACIÓN DE PÁGINA (Estilo Pro)
 st.set_page_config(
-    page_title="Radar Subvenciones AI v16.0",
-    page_icon="📡",
+    page_title="Radar Subvenciones Master v17.0",
+    page_icon="⚡",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
@@ -21,54 +21,52 @@ def check_password():
             st.session_state["password_correct"] = False
 
     if "password_correct" not in st.session_state:
-        st.markdown("<h1 style='text-align: center; color: white;'>🔐 ACCESO RESTRINGIDO</h1>", unsafe_allow_html=True)
+        st.markdown("<h1 style='text-align: center; color: white;'>🔑 ACCESO RESTRINGIDO</h1>", unsafe_allow_html=True)
         st.text_input("Introduce Credencial Master", type="password", on_change=password_entered, key="password")
         return False
     return True
 
 if check_password():
 
-    # --- DISEÑO CSS "CYBER-BUNKER" (GLOW & LIFT) ---
+    # --- DISEÑO CSS "NEO-BUNKER" (GLOW & LIFT) ---
     st.markdown("""
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap');
         
-        /* Fondo Global */
-        .stApp { background-color: #0d1117 !important; }
-        .main { background-color: #0d1117; font-family: 'Outfit', sans-serif; }
+        /* Fondo Global del Búnker */
+        .stApp { background-color: #0b0e14 !important; }
         
-        /* LA BURBUJA: Efecto Lifting y Brillo Azul */
+        /* LA BURBUJA: El efecto neón al pasar el cursor */
         div[data-testid="stVerticalBlockBorderWrapper"] {
             background-color: #161b22 !important;
-            border-radius: 30px !important;
-            border: 1px solid rgba(255,255,255,0.08) !important;
-            padding: 0px !important; /* Foto pegada al techo */
-            box-shadow: 0 15px 35px rgba(0,0,0,0.4) !important;
+            border-radius: 35px !important;
+            border: 1px solid rgba(88, 166, 255, 0.1) !important;
+            padding: 0px !important;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
             transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
             margin-bottom: 25px !important;
             overflow: hidden !important;
         }
         
-        /* EFECTO HOVER NEÓN AZUL */
+        /* EL EFECTO NEÓN AZUL QUE PEDÍAS */
         div[data-testid="stVerticalBlockBorderWrapper"]:hover {
-            border-color: #58a6ff !important;
-            transform: translateY(-10px) scale(1.02) !important;
-            box-shadow: 0 0 30px rgba(88, 166, 255, 0.5) !important;
-            z-index: 99;
+            border-color: #00f2ff !important;
+            transform: translateY(-12px) scale(1.02) !important;
+            box-shadow: 0 0 40px rgba(0, 242, 255, 0.35) !important;
+            z-index: 100;
         }
 
-        /* Cabecera de imagen (Blindada) */
+        /* Cabecera de imagen integrada */
         .header-box {
             width: 100%;
-            height: 240px;
+            height: 250px;
             background-size: cover;
             background-position: center;
-            border-radius: 30px 30px 0 0;
+            border-radius: 35px 35px 0 0;
             margin-top: -1px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            border-bottom: 1px solid rgba(88, 166, 255, 0.2);
         }
 
-        /* Contenido de texto */
         .card-body {
             padding: 25px;
             color: white;
@@ -86,41 +84,40 @@ if check_password():
         .tag-pill {
             display: inline-block;
             color: white !important;
-            padding: 5px 12px;
+            padding: 5px 14px;
             border-radius: 12px;
             font-size: 11px;
             font-weight: 800;
             text-transform: uppercase;
             margin-right: 6px;
             margin-bottom: 8px;
-            letter-spacing: 0.5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
 
-        /* Cuantía y Plazo alineados (Look Apple) */
+        /* Cápsulas de información */
         .info-pill {
-            background: rgba(255,255,255,0.04);
+            background: rgba(255, 255, 255, 0.04);
             border-radius: 20px;
             padding: 18px;
             text-align: center;
-            border: 1px solid rgba(255,255,255,0.08);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             transition: 0.3s;
         }
         .info-pill:hover {
-            background: rgba(88, 166, 255, 0.05);
-            border-color: rgba(88, 166, 255, 0.2);
+            background: rgba(0, 242, 255, 0.05);
+            border-color: rgba(0, 242, 255, 0.2);
         }
-        .info-label { color: #8b949e !important; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 5px;}
-        .info-value { color: #58a6ff !important; font-size: 20px !important; font-weight: 900; margin: 0; }
+        .info-label { color: #8b949e !important; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px;}
+        .info-value { color: #00f2ff !important; font-size: 20px !important; font-weight: 900; margin: 0; }
 
-        /* Estilo del Expander (Más elegante) */
+        /* Expander Estilo Premium */
         .stExpander {
             background-color: rgba(255,255,255,0.02) !important;
             border: 1px solid rgba(255,255,255,0.1) !important;
             border-radius: 20px !important;
-            margin-bottom: 10px !important;
+            margin-bottom: 15px !important;
         }
         
-        /* Ocultar elementos de Streamlit */
         #MainMenu {visibility: hidden;}
         footer {visibility: hidden;}
         </style>
@@ -147,25 +144,25 @@ if check_password():
         if "estatal" in t: return "#8957e5"
         return "#444c56"
 
-    # 4. IMÁGENES PREMIUM (Actualizadas para máxima fiabilidad)
+    # 4. FOTOS NUEVAS Y BLINDADAS (IDs de Alta Disponibilidad)
     def get_sector_image(sector, titulo):
         combined = (str(sector) + " " + str(titulo)).lower()
         
-        # Diccionario de fotos Unsplash con IDs robustos
+        # Diccionario con fotos de alta fiabilidad
         ids = {
-            'dana': '1582213726461-8decb21c5763',     # Comunidad / Reconstrucción
-            'univ': '1523050853173-ee040a84139b',     # Universidad / Biblioteca
-            'solar': '1509391366360-2e959784a276',    # Solar
-            'eolic': '1466611653911-954ff21b6724',    # Molinos
-            'indus': '1581091226825-a6a2a5aee158',    # Industria
-            'digital': '1518770660439-4636190af475', # IA / Tech
-            'global': '1451187580459-43490279c0fa'    # Tech General
+            'dana': '1593113501539-d91f43f130ac', # Comunidad / Voluntarios
+            'univ': '1456518563333-7d13c6179a62', # Educación / Libros
+            'solar': '1509391366360-2e959784a276', # Solar
+            'eolic': '1466611653911-954ff21b6724', # Viento
+            'indus': '1581091226825-a6a2a5aee158', # Industria
+            'digital': '1518770660439-4636190af475', # IA
+            'global': '1451187580459-43490279c0fa' # Tech General
         }
         
         img = ids['global']
-        if 'dana' in combined: img = ids['dana']
-        elif any(x in combined for x in ['univ', 'lector', 'maec', 'curso', 'beca']): img = ids['univ']
-        elif any(x in combined for x in ['solar', 'foto', 'placa']): img = ids['solar']
+        if 'dana' in combined or 'tercer sector' in combined: img = ids['dana']
+        elif any(x in combined for x in ['univ', 'maec', 'curso', 'beca', 'lector']): img = ids['univ']
+        elif any(x in combined for x in ['energ', 'foto', 'placa', 'solar']): img = ids['solar']
         elif 'eolic' in combined: img = ids['eolic']
         elif any(x in combined for x in ['indust', 'fabrica', 'manufactura']): img = ids['indus']
         elif any(x in combined for x in ['digital', 'tic', 'software']): img = ids['digital']
@@ -174,31 +171,30 @@ if check_password():
 
     df = load_data()
 
-    # --- HEADER ---
-    st.markdown("<h1 style='color: #58a6ff; font-weight: 900; letter-spacing: -1.5px;'>📡 Radar Inteligente de Subvenciones</h1>", unsafe_allow_html=True)
-    query = st.text_input("🔍 FILTRAR POR PALABRA CLAVE", placeholder="Ej: Industria, Energía, Hidrógeno...")
+    # --- UI PRINCIPAL ---
+    st.markdown("<h1 style='color: #00f2ff; font-weight: 900; letter-spacing: -1.5px;'>📡 Radar de Inteligencia Estratégica</h1>", unsafe_allow_html=True)
+    query = st.text_input("🔍 FILTRAR SUBSISTEMA", placeholder="Palabra clave...")
 
     if df is not None:
         if query:
             df = df[df.apply(lambda r: r.astype(str).str.contains(query, case=False).any(), axis=1)]
 
-        # --- GRID DE BURBUJAS ---
+        # --- GRID DE BURBUJAS NEÓN ---
         cols = st.columns(2)
         for i in range(len(df)):
             fila = df.iloc[i]
             if pd.isna(fila.iloc[1]): continue
             
             with cols[i % 2]:
-                # LA BURBUJA (Container nativo con estilo inyectado)
                 with st.container(border=True):
-                    # Foto inyectada (Sin huecos arriba)
+                    # Foto Blindada inyectada como fondo (Sin fallos)
                     img_url = get_sector_image(fila.iloc[5], fila.iloc[1])
                     st.markdown(f'<div class="header-box" style="background-image: url(\'{img_url}\');"></div>', unsafe_allow_html=True)
                     
                     # Cuerpo de la tarjeta
                     st.markdown('<div class="card-body">', unsafe_allow_html=True)
                     
-                    # Probabilidad (Arriba a la derecha)
+                    # Probabilidad
                     prob = str(fila.iloc[9]).strip()
                     p_color = "#3fb950" if "Alta" in prob else "#d29922"
                     st.markdown(f'<div style="float: right; color: {p_color}; font-size: 12px; font-weight: 900; letter-spacing: 1px;">● {prob.upper()}</div>', unsafe_allow_html=True)
@@ -213,14 +209,14 @@ if check_password():
                     
                     # Expander Integrado
                     with st.expander("🚀 ANALIZAR OPORTUNIDAD"):
-                        st.markdown("**Estrategia de Negocio:**")
+                        st.markdown("**Reporte de IA:**")
                         st.write(fila.iloc[6])
-                        st.info(f"**Justificación:** {fila.iloc[7]}")
-                        st.markdown("**Requisitos:**")
+                        st.info(f"Oportunidad: {fila.iloc[7]}")
+                        st.markdown("**Requisitos Técnicos:**")
                         st.write(fila.iloc[8])
-                        st.link_button("🔗 VER EN EL BOE OFICIAL", str(fila.iloc[0]), use_container_width=True)
+                        st.link_button("🔗 VER EXPEDIENTE OFICIAL", str(fila.iloc[0]), use_container_width=True)
                     
-                    # --- DATOS ABAJO: Alineados y Centrados ---
+                    # --- DATOS ABAJO: Centrados y alineados ---
                     st.write("")
                     c_1, c_2 = st.columns(2)
                     with c_1:
@@ -240,4 +236,4 @@ if check_password():
                     
                     st.markdown('</div>', unsafe_allow_html=True)
 
-    st.caption("Radar Terminal v16.0 | Master Cyber-Bunker | 2025")
+    st.caption("Radar Terminal v17.0 | Master Neo-Bunker Edition | 2025")
