@@ -4,172 +4,179 @@ import requests
 import io
 
 # ==============================================================================
-# 1. CONFIGURACIÓN DEL MOTOR (TITAN ENGINE)
+# 1. CONFIGURACIÓN DEL MOTOR
 # ==============================================================================
 st.set_page_config(
-    page_title="Radar Subvenciones | TITAN EDITION",
+    page_title="Radar Subvenciones | TITAL¡N",
     page_icon="💠",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
 
 # ==============================================================================
-# 2. INYECCIÓN CSS (EL ALMA DEL DISEÑO)
+# 2. CSS DINÁMICO (LA MAGIA DEL CAMBIO AUTOMÁTICO)
 # ==============================================================================
 st.markdown("""
     <style>
-    /* IMPORTAR FUENTE FUTURISTA */
     @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=Inter:wght@400;600;800&display=swap');
 
-    /* --- RESET GLOBAL --- */
+    /* --- DEFINICIÓN DE VARIABLES (EL CEREBRO DEL TEMA) --- */
+    :root {
+        /* VALORES POR DEFECTO (MODO CLARO - CLEAN PRO) */
+        --bg-app: #f3f4f6;              /* Gris muy suave */
+        --card-bg: #ffffff;             /* Blanco puro */
+        --card-border: #e5e7eb;         /* Borde gris sutil */
+        --text-title: #111827;          /* Casi negro */
+        --text-body: #4b5563;           /* Gris oscuro */
+        --accent-color: #2563eb;        /* AZUL ROYAL */
+        --shadow-color: rgba(0,0,0,0.05);
+        --shadow-hover: rgba(37, 99, 235, 0.15); /* Sombra azulada */
+        --badge-bg: #dbeafe;
+        --badge-text: #1e40af;
+        --hover-transform: -5px;
+        --input-bg: #ffffff;
+        --filter-img: brightness(1);    /* Foto normal */
+    }
+
+    /* DETECCIÓN AUTOMÁTICA DE MODO OSCURO (TITAN MODE) */
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --bg-app: #050505;          /* Negro Titan */
+            --card-bg: #111111;         /* Gris Carbón */
+            --card-border: #333333;     /* Borde oscuro */
+            --text-title: #ffffff;      /* Blanco */
+            --text-body: #9ca3af;       /* Gris plata */
+            --accent-color: #00f2ff;    /* CIAN NEÓN */
+            --shadow-color: rgba(0,0,0,0.8);
+            --shadow-hover: rgba(0, 242, 255, 0.2); /* Resplandor Cian */
+            --badge-bg: rgba(0, 242, 255, 0.1);
+            --badge-text: #00f2ff;
+            --hover-transform: -8px;
+            --input-bg: #111111;
+            --filter-img: brightness(0.85); /* Un poco oscura para resaltar textos */
+        }
+    }
+
+    /* --- APLICACIÓN DE VARIABLES --- */
+    
     .stApp {
-        background-color: #050505 !important; /* Negro Puro */
-        color: white !important;
+        background-color: var(--bg-app) !important;
+        color: var(--text-title) !important;
     }
     
-    /* Eliminar márgenes molestos de Streamlit arriba */
-    .block-container {
-        padding-top: 2rem !important;
-        padding-bottom: 5rem !important;
-    }
+    .block-container { padding-top: 2rem !important; }
 
-    /* --- ESTILO DE LA TARJETA (TITAN CARD) --- */
-    /* Esta clase envuelve todo el bloque visual superior */
-    .titan-card {
-        background: #111111;
-        border: 1px solid #333;
+    /* TARJETA DINÁMICA */
+    .smart-card {
+        background-color: var(--card-bg);
+        border: 1px solid var(--card-border);
         border-radius: 16px;
-        overflow: hidden; /* Esto recorta la imagen en las esquinas */
+        overflow: hidden;
         position: relative;
-        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        margin-bottom: 0px; /* Pegado al botón de abajo */
-        box-shadow: 0 4px 20px rgba(0,0,0,0.8);
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        box-shadow: 0 4px 6px -1px var(--shadow-color);
+        margin-bottom: 0px;
     }
 
-    /* EL HOVER MÁGICO */
-    .titan-card:hover {
-        transform: translateY(-8px) scale(1.01);
-        border-color: #00f2ff; /* CIAN ELÉCTRICO */
-        box-shadow: 0 0 40px rgba(0, 242, 255, 0.2);
+    .smart-card:hover {
+        transform: translateY(var(--hover-transform));
+        border-color: var(--accent-color);
+        box-shadow: 0 10px 30px -5px var(--shadow-hover);
         z-index: 2;
     }
 
-    /* --- IMAGEN FULL WIDTH --- */
-    .titan-img {
+    /* IMAGEN */
+    .card-img {
         width: 100%;
         height: 220px;
         object-fit: cover;
-        border-bottom: 1px solid #333;
-        filter: brightness(0.85);
+        border-bottom: 1px solid var(--card-border);
+        filter: var(--filter-img);
         transition: 0.3s;
     }
-    .titan-card:hover .titan-img {
-        filter: brightness(1.1);
-    }
+    .smart-card:hover .card-img { filter: brightness(1.05); }
 
-    /* --- CONTENIDO DE LA TARJETA --- */
-    .titan-body {
-        padding: 20px;
-        background: linear-gradient(180deg, #111111 0%, #0a0a0a 100%);
-    }
+    /* CUERPO */
+    .card-body { padding: 20px; }
 
-    /* TÍTULO */
-    .titan-title {
+    /* TEXTOS */
+    .card-title {
         font-family: 'Inter', sans-serif;
         font-weight: 800;
         font-size: 18px;
         line-height: 1.4;
-        color: #ffffff;
+        color: var(--text-title);
         margin-bottom: 15px;
-        min-height: 50px; /* Para alinear alturas */
-        text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        min-height: 50px;
     }
 
-    /* BADGE DE PROBABILIDAD (FLOTANTE) */
-    .titan-badge {
+    /* BADGE */
+    .card-badge {
         position: absolute;
-        top: 15px;
+        top: 15px; 
         right: 15px;
-        background: rgba(0,0,0,0.7);
-        backdrop-filter: blur(4px);
-        padding: 5px 12px;
+        background: var(--badge-bg);
+        color: var(--badge-text);
+        border: 1px solid var(--badge-text);
+        padding: 4px 10px;
         border-radius: 20px;
-        font-family: 'Rajdhani', sans-serif;
-        font-weight: 700;
-        font-size: 12px;
-        letter-spacing: 1px;
-        border: 1px solid rgba(255,255,255,0.2);
-        color: white;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        font-size: 11px;
+        font-weight: 800;
+        backdrop-filter: blur(4px);
     }
 
-    /* TAGS */
-    .titan-tags {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        margin-bottom: 20px;
-    }
-    .t-tag {
-        font-size: 10px;
-        font-family: 'Inter', sans-serif;
-        font-weight: 700;
-        text-transform: uppercase;
-        padding: 4px 8px;
-        border-radius: 6px;
-        color: white;
-    }
-
-    /* GRID DE DATOS (PRECIO Y FECHA) */
-    .titan-grid {
+    /* GRID DE DATOS */
+    .data-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 10px;
-        border-top: 1px solid #222;
+        border-top: 1px solid var(--card-border);
         padding-top: 15px;
+        margin-top: 15px;
     }
-    .t-data-box {
-        text-align: center;
-    }
-    .t-label {
-        font-size: 10px;
-        color: #666;
-        font-weight: 700;
+    .data-item { text-align: center; }
+    .data-label {
+        font-size: 10px; 
+        color: var(--text-body);
+        font-weight: 700; 
         text-transform: uppercase;
-        letter-spacing: 1px;
-        margin-bottom: 4px;
     }
-    .t-value {
+    .data-value {
         font-family: 'Rajdhani', sans-serif;
-        font-size: 18px;
+        font-size: 18px; 
         font-weight: 700;
-        color: #00f2ff; /* CIAN */
+        color: var(--accent-color);
     }
 
-    /* --- MODIFICACIÓN DE STREAMLIT ELEMENTS --- */
-    /* Hacemos que el expander parezca parte de la tarjeta */
+    /* TAGS */
+    .tag-container { display: flex; flex-wrap: wrap; gap: 5px; }
+    .smart-tag {
+        font-size: 10px;
+        font-weight: 700;
+        padding: 3px 8px;
+        border-radius: 6px;
+        color: white; /* Los tags siempre blancos pq llevan fondo de color */
+        text-transform: uppercase;
+    }
+
+    /* COMPONENTES NATIVOS ADAPTADOS */
+    .stTextInput input {
+        background-color: var(--input-bg) !important;
+        border: 1px solid var(--card-border) !important;
+        color: var(--text-title) !important;
+    }
+    .stTextInput input:focus { border-color: var(--accent-color) !important; }
+    
     .stExpander {
-        background-color: #0a0a0a !important;
-        border: 1px solid #333 !important;
+        background-color: var(--card-bg) !important;
+        border: 1px solid var(--card-border) !important;
         border-top: none !important;
         border-radius: 0 0 16px 16px !important;
-        margin-top: -5px !important; /* Pegarlo visualmente */
     }
-    .streamlit-expanderContent p { color: #ccc !important; font-size: 14px; }
+    .streamlit-expanderContent p { color: var(--text-body) !important; }
+    h1, h2, h3 { color: var(--text-title) !important; }
     
-    /* Inputs */
-    .stTextInput input {
-        background-color: #111 !important;
-        border: 1px solid #333 !important;
-        color: white !important;
-        border-radius: 10px;
-    }
-    .stTextInput input:focus { border-color: #00f2ff !important; }
-
-    /* Ocultar menú */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
+    #MainMenu {visibility: hidden;} footer {visibility: hidden;}
     </style>
 """, unsafe_allow_html=True)
 
@@ -177,27 +184,22 @@ st.markdown("""
 # 3. SEGURIDAD
 # ==============================================================================
 def check_password():
-    if "password_correct" not in st.session_state:
-        st.session_state["password_correct"] = False
-
+    if "password_correct" not in st.session_state: st.session_state["password_correct"] = False
     def password_entered():
         if st.session_state["password"] == st.secrets["password"]:
             st.session_state["password_correct"] = True
             del st.session_state["password"]
-        else:
-            st.session_state["password_correct"] = False
-
+        else: st.session_state["password_correct"] = False
     if not st.session_state["password_correct"]:
         c1, c2, c3 = st.columns([1,2,1])
         with c2:
-            st.markdown("<br><br><h1 style='text-align: center; color: #00f2ff;'> CLAVE DE ACCESO:</h1>", unsafe_allow_html=True)
-            st.text_input("ACCESS CODE", type="password", on_change=password_entered, key="password")
-            st.markdown("<p style='text-align: center; color: #444; font-size: 12px;'>SYSTEM LOCKED • AUTHORIZED PERSONNEL ONLY</p>", unsafe_allow_html=True)
+            st.markdown("<br><br><h1 style='text-align:center;'>🔐 SECURITY CHECK</h1>", unsafe_allow_html=True)
+            st.text_input("PASSWORD", type="password", on_change=password_entered, key="password")
         return False
     return True
 
 # ==============================================================================
-# 4. LÓGICA DE DATOS
+# 4. LÓGICA & IMÁGENES
 # ==============================================================================
 @st.cache_data(ttl=60)
 def load_data():
@@ -210,140 +212,85 @@ def load_data():
         return df
     except: return None
 
-# Helper para colores de tags
+# Helper para color de tags (Funciona en ambos modos pq el texto es blanco)
 def get_tag_bg(tag):
     t = tag.lower()
-    if "next" in t: return "linear-gradient(90deg, #00416A, #002135)" # Azul profundo
-    if "subvenc" in t: return "linear-gradient(90deg, #134E5E, #71B280)" # Verde esmeralda
-    return "linear-gradient(90deg, #232526, #414345)" # Gris metal
+    if "next" in t: return "#2563eb" # Azul Real
+    if "subvenc" in t: return "#16a34a" # Verde
+    if "préstamo" in t: return "#dc2626" # Rojo
+    return "#4b5563" # Gris oscuro
 
-# -------------------------------------------------------------
-# 5. LÓGICA DE IMÁGENES SEMÁNTICAS (LO QUE PEDÍAS)
-# -------------------------------------------------------------
 def get_img_url(sector, titulo):
-    # Unificamos texto para buscar palabras clave
     combined = (str(sector) + " " + str(titulo)).lower()
-    
-    # IDs FIJOS de Unsplash que sabemos que son bonitos y encajan con el tema
-    # Usamos parámetros 'auto=format&fit=crop&w=800&q=80' para que carguen rápido y bien
-    
-    # DANA / Social / Ayuda
-    if any(x in combined for x in ['dana', 'catastrofe', 'social', 'tercer sector', 'vulnerable', 'ayuda']):
-        return "https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&w=800&q=80" # Manos unidas
-        
-    # Energía Solar
-    elif any(x in combined for x in ['solar', 'fotovoltaica', 'autoconsumo', 'placa']):
-        return "https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&w=800&q=80" # Paneles solares
-        
-    # Energía Eólica
-    elif any(x in combined for x in ['eolic', 'viento', 'aerogenerador']):
-        return "https://images.unsplash.com/photo-1466611653911-954ff21b6724?auto=format&fit=crop&w=800&q=80" # Molinos
-        
-    # Industria
-    elif any(x in combined for x in ['industr', 'fabrica', 'manufact', 'pyme', 'prod']):
-        return "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=80" # Fabrica moderna
-        
-    # Tecnología / Digital
-    elif any(x in combined for x in ['digital', 'tic', 'software', 'ia', 'cyber', 'tecnol']):
-        return "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80" # Chip/Tecnología
-        
-    # Agricultura
-    elif any(x in combined for x in ['agro', 'campo', 'rural', 'ganad', 'pesca']):
-        return "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?auto=format&fit=crop&w=800&q=80" # Tractor/Campo
-        
-    # Movilidad / Coches
-    elif any(x in combined for x in ['coche', 'vehicul', 'transporte', 'movilidad', 'moves']):
-        return "https://images.unsplash.com/photo-1553265027-99d530167b28?auto=format&fit=crop&w=800&q=80" # Carga coche eléctrico
-        
-    # Educación / Universidad
-    elif any(x in combined for x in ['univ', 'beca', 'educacion', 'investigacion', 'doctor', 'maec']):
-        return "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=800&q=80" # Biblioteca
-        
-    # Default (Genérico Tecnológico Azul)
-    else:
-        return "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80"
+    # Enlaces de Unsplash optimizados y temáticos
+    if any(x in combined for x in ['dana', 'social', 'ayuda']): return "https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&w=800&q=80"
+    elif any(x in combined for x in ['solar', 'energ']): return "https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&w=800&q=80"
+    elif any(x in combined for x in ['eolic', 'viento']): return "https://images.unsplash.com/photo-1466611653911-954ff21b6724?auto=format&fit=crop&w=800&q=80"
+    elif any(x in combined for x in ['indus', 'fabrica']): return "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=80"
+    elif any(x in combined for x in ['tech', 'digital', 'tic']): return "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80"
+    elif any(x in combined for x in ['agro', 'campo']): return "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?auto=format&fit=crop&w=800&q=80"
+    elif any(x in combined for x in ['coche', 'transporte']): return "https://images.unsplash.com/photo-1553265027-99d530167b28?auto=format&fit=crop&w=800&q=80"
+    elif any(x in combined for x in ['univ', 'educacion']): return "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=800&q=80"
+    else: return "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80"
 
 # ==============================================================================
-# 6. UI PRINCIPAL
+# 5. UI PRINCIPAL
 # ==============================================================================
 if check_password():
     
-    # --- HEADER ---
-    c_logo, c_search = st.columns([2, 3])
-    with c_logo:
-        st.markdown("<h1 style='margin:0; font-size: 36px;'>💠 RADAR <span style='color:#00f2ff'>TITAN</span></h1>", unsafe_allow_html=True)
-        st.caption("DEEP SCANNING SYSTEM v27.0")
+    c_head, c_search = st.columns([1, 1])
+    with c_head:
+        # El color del título cambia con CSS var(--text-title)
+        st.markdown("<h1 style='margin:0; font-size:32px;'>📡 RADAR <span style='color:var(--accent-color)'>AI</span></h1>", unsafe_allow_html=True)
     with c_search:
-        st.markdown("<div style='height: 15px'></div>", unsafe_allow_html=True) # Spacer
+        st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
         query = st.text_input("", placeholder="🔍 Buscar oportunidad...", label_visibility="collapsed")
 
     st.markdown("---")
-
     df = load_data()
 
     if df is not None:
-        if query:
-            df = df[df.apply(lambda r: r.astype(str).str.contains(query, case=False).any(), axis=1)]
+        if query: df = df[df.apply(lambda r: r.astype(str).str.contains(query, case=False).any(), axis=1)]
 
-        # --- GRID RENDER ---
         cols = st.columns(2)
-        
         for i, row in df.iterrows():
             if pd.isna(row.iloc[1]): continue
             
-            # Preparar datos
             titulo = row.iloc[1]
-            tags_raw = str(row.iloc[2]).split('|')
-            tags_html = "".join([f"<span class='t-tag' style='background: {get_tag_bg(t.strip())}'>{t.strip()}</span>" for t in tags_raw])
-            cuantia = row.iloc[3]
-            plazo = row.iloc[4]
-            
-            # --- AQUÍ LLAMAMOS A LA FUNCIÓN DE FOTOS CORREGIDA ---
+            tags_html = "".join([f"<span class='smart-tag' style='background:{get_tag_bg(t.strip())}'>{t.strip()}</span>" for t in str(row.iloc[2]).split('|')])
             img_url = get_img_url(row.iloc[5], titulo)
-            
-            # Badge probabilidad
             prob = str(row.iloc[9]).strip()
-            color_prob = "#00f2ff" if "Alta" in prob else "#ffcc00"
-            badge_html = f"<div class='titan-badge' style='color:{color_prob}; border-color:{color_prob};'>● {prob.upper()}</div>"
-
-            # HTML CARD (Diseño TITAN)
+            
+            # HTML CARD (Usa variables CSS)
             html_card = f"""
-            <div class="titan-card">
-                {badge_html}
-                <img src="{img_url}" class="titan-img">
-                <div class="titan-body">
-                    <div class="titan-title">{titulo}</div>
-                    <div class="titan-tags">{tags_html}</div>
-                    <div class="titan-grid">
-                        <div class="t-data-box">
-                            <div class="t-label">Cuantía</div>
-                            <div class="t-value">{cuantia}</div>
+            <div class="smart-card">
+                <div class="card-badge">● {prob.upper()}</div>
+                <img src="{img_url}" class="card-img">
+                <div class="card-body">
+                    <div class="card-title">{titulo}</div>
+                    <div class="tag-container">{tags_html}</div>
+                    <div class="data-grid">
+                        <div class="data-item">
+                            <div class="data-label">Cuantía</div>
+                            <div class="data-value">{row.iloc[3]}</div>
                         </div>
-                        <div class="t-data-box">
-                            <div class="t-label">Plazo</div>
-                            <div class="t-value">{plazo}</div>
+                        <div class="data-item">
+                            <div class="data-label">Plazo</div>
+                            <div class="data-value">{row.iloc[4]}</div>
                         </div>
                     </div>
                 </div>
             </div>
             """
-
-            # Render
+            
             with cols[i % 2]:
                 st.markdown(html_card, unsafe_allow_html=True)
-                
-                with st.expander("🔻 ESTRATEGIA Y ACCESO"):
+                with st.expander("🔻 ESTRATEGIA Y DETALLES"):
                     st.markdown("#### 🧠 Análisis IA")
                     st.write(row.iloc[6])
                     st.markdown("#### 📜 Requisitos")
                     st.write(row.iloc[8])
                     st.markdown("<br>", unsafe_allow_html=True)
                     st.link_button("🔗 ACCEDER AL BOE", str(row.iloc[0]), use_container_width=True)
-                
                 st.write("") 
-
-    else:
-        st.error("DATABASE CONNECTION FAILED.")
-
-    # Footer
-    st.markdown("<br><br><div style='text-align: center; color: #333; font-size: 10px;'>TITAN ENGINE // SECURE CONNECTION</div>", unsafe_allow_html=True)
+    else: st.error("DATABASE ERROR")
