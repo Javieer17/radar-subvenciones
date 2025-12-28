@@ -5,7 +5,7 @@ import io
 
 # 1. CONFIGURACIÓN DE PÁGINA
 st.set_page_config(
-    page_title="Radar Subvenciones AI v8.0",
+    page_title="Radar Subvenciones AI v9.0",
     page_icon="💎",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -28,66 +28,67 @@ def check_password():
 
 if check_password():
 
-    # --- DISEÑO CSS AVANZADO ---
+    # --- DISEÑO CSS "CYBER-BUNKER" (EFECTO BURBUJA & NEÓN) ---
     st.markdown("""
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap');
         
         .main { background-color: #0d1117; font-family: 'Outfit', sans-serif; }
         
+        /* La Tarjeta (Burbuja principal) */
         .subs-card {
             background: #161b22;
-            border-radius: 20px;
-            padding: 25px;
+            border-radius: 25px;
+            padding: 28px;
             margin-bottom: 25px;
-            border: 1px solid #30363d;
+            border: 1px solid rgba(255,255,255,0.05);
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            transition: all 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            overflow: hidden;
         }
         
+        /* EFECTO HOVER (El que te gustaba) */
+        .subs-card:hover {
+            transform: scale(1.02);
+            border-color: #58a6ff;
+            box-shadow: 0 0 30px rgba(88, 166, 255, 0.25);
+        }
+        
+        /* La Foto dentro de la burbuja */
         .card-img {
             width: 100%;
-            height: 240px;
-            object-fit: cover;
-            border-radius: 15px;
-            margin-bottom: 15px;
+            height: 250px;
+            object-fit: cover; /* Hace que la foto encaje perfecta */
+            border-radius: 18px;
+            margin-bottom: 20px;
             border: 1px solid rgba(255,255,255,0.1);
         }
         
-        .badge-prob {
-            padding: 6px 15px;
-            border-radius: 10px;
-            font-size: 13px;
-            font-weight: 900;
-            text-transform: uppercase;
-            float: right;
-        }
-        .prob-alta { color: #3fb950; border: 2px solid #3fb950; background: rgba(63,185,80,0.1); }
-        .prob-media { color: #d29922; border: 2px solid #d29922; background: rgba(210,153,34,0.1); }
-        
-        /* ETIQUETAS EN LÍNEA */
+        /* Etiquetas en Línea (Flexbox) */
         .tag-container {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
-            margin: 15px 0;
+            gap: 10px;
+            margin-bottom: 20px;
         }
+        
         .tag {
             color: white;
-            padding: 5px 12px;
-            border-radius: 8px;
+            padding: 6px 14px;
+            border-radius: 10px;
             font-size: 11px;
             font-weight: 800;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
         }
         
         .sub-title {
             color: #ffffff;
-            font-size: 22px !important;
+            font-size: 24px !important;
             font-weight: 800 !important;
             line-height: 1.2;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
         }
         
         .data-label {
@@ -99,10 +100,22 @@ if check_password():
         }
         .data-value {
             color: #58a6ff;
-            font-size: 20px;
+            font-size: 21px;
             font-weight: 800;
-            margin-bottom: 15px;
+            margin-bottom: 18px;
         }
+        
+        /* Probabilidad arriba a la derecha */
+        .badge-prob {
+            padding: 6px 15px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 900;
+            text-transform: uppercase;
+            float: right;
+        }
+        .prob-alta { color: #3fb950; border: 2px solid #3fb950; background: rgba(63,185,80,0.15); }
+        .prob-media { color: #d29922; border: 2px solid #d29922; background: rgba(210,153,34,0.15); }
         </style>
         """, unsafe_allow_html=True)
 
@@ -118,7 +131,7 @@ if check_password():
             return df
         except: return None
 
-    # COLORES DE TAGS
+    # 3. LÓGICA DE COLORES DE TAGS
     def get_tag_color(tag):
         t = tag.lower()
         if "next" in t or "prtr" in t: return "#1f6feb" 
@@ -127,36 +140,48 @@ if check_password():
         if "estatal" in t: return "#8957e5" 
         return "#444c56"
 
-    # IMÁGENES FIJAS
+    # 4. GALERÍA DE IMÁGENES PREMIUM (IDs verificados)
     def get_sector_image(sector, titulo):
         combined = (str(sector) + " " + str(titulo)).lower()
-        # IDs que cargan rápido y bien
+        # Diccionario con 12 categorías reales de subvenciones
         img_ids = {
-            'solar': '1509391366360-2e959784a276',
-            'eolic': '1466611653911-954ff21b6724',
-            'indust': '1581091226825-a6a2a5aee158',
-            'digital': '1518770660439-4636190af475',
-            'social': '1469571486292-0ba58a3f068b',
-            'dana': '1554123165-c84614e6092d',
-            'educa': '1523050853173-ee040a84139b',
-            'global': '1451187580459-43490279c0fa'
+            'solar': '1509391366360-2e959784a276',      # Paneles solares
+            'eolic': '1466611653911-954ff21b6724',      # Molinos
+            'indust': '1581091226825-a6a2a5aee158',     # Fábrica moderna
+            'digital': '1518770660439-4636190af475',    # Código / IA
+            'agro': '1523348837708-15d4a09cfac2',       # Campo / Tractor
+            'social': '1469571486292-0ba58a3f068b',     # Ayuda social / Infancia
+            'dana': '1554123165-c84614e6092d',          # Reconstrucción / Comunidad
+            'transp': '1506521781263-d8422e82f27a',     # Coche eléctrico / Moves
+            'educa': '1523050853173-ee040a84139b',      # Universidad / Lectorados
+            'vivienda': '1486408736691-c99932400491',   # Edificios / Construcción
+            'hidro': '1516937941524-747f48d6db12',      # Agua / Central hidroeléctrica
+            'startup': '1522202176988-66273c2fd55f',    # Emprendimiento / Startup
+            'global': '1451187580459-43490279c0fa'      # Tecnología global
         }
+        
+        # Selección inteligente de la foto
         id_img = img_ids['global']
         if 'dana' in combined: id_img = img_ids['dana']
-        elif 'lector' in combined or 'univ' in combined: id_img = img_ids['educa']
-        elif 'energ' in combined or 'foto' in combined: id_img = img_ids['solar']
+        elif any(x in combined for x in ['lector', 'univ', 'docen', 'escuela']): id_img = img_ids['educa']
+        elif any(x in combined for x in ['energ', 'foto', 'placas']): id_img = img_ids['solar']
         elif 'eolic' in combined: id_img = img_ids['eolic']
-        elif 'indust' in combined: id_img = img_ids['indust']
-        elif 'digital' in combined: id_img = img_ids['digital']
-        elif 'social' in combined: id_img = img_ids['social']
+        elif any(x in combined for x in ['indust', 'manufact', 'cvi', 'descarboni']): id_img = img_ids['indust']
+        elif any(x in combined for x in ['agro', 'campo', 'forest', 'agri']): id_img = img_ids['agro']
+        elif any(x in combined for x in ['digital', 'tic', 'softw', 'ia']): id_img = img_ids['digital']
+        elif any(x in combined for x in ['social', 'infan', 'tercer sector', 'dana']): id_img = img_ids['social']
+        elif any(x in combined for x in ['transp', 'moves', 'vehic', 'electri']): id_img = img_ids['transp']
+        elif 'hidro' in combined: id_img = img_ids['hidro']
+        elif any(x in combined for x in ['emprend', 'startup', 'pyme']): id_img = img_ids['startup']
+        elif any(x in combined for x in ['edific', 'vivienda', 'rehabilit']): id_img = img_ids['vivienda']
         
-        return f"https://images.unsplash.com/photo-{id_img}?auto=format&fit=crop&w=800&q=60"
+        return f"https://images.unsplash.com/photo-{id_img}?auto=format&fit=crop&w=1000&q=80"
 
     df = load_data()
 
     # --- HEADER ---
-    st.markdown("<h1 style='color: #58a6ff;'>📡 Radar de Inteligencia Estratégica</h1>", unsafe_allow_html=True)
-    query = st.text_input("🔍 FILTRAR RESULTADOS", placeholder="Ej: Industria, Energía, DANA...")
+    st.markdown("<h1 style='color: #58a6ff; font-weight: 900; letter-spacing: -1px;'>📡 Radar de Inteligencia Estratégica</h1>", unsafe_allow_html=True)
+    query = st.text_input("🔍 FILTRAR POR PALABRA CLAVE", placeholder="Busca industria, digital, energía...")
 
     if df is not None:
         if query:
@@ -164,7 +189,7 @@ if check_password():
 
         st.divider()
 
-        # --- GRID DE TARJETAS ---
+        # --- GRID DE TARJETAS (Burbujas Neón) ---
         cols = st.columns(2)
         for i in range(len(df)):
             fila = df.iloc[i]
@@ -174,34 +199,34 @@ if check_password():
                 prob = str(fila.iloc[9]).strip()
                 p_class = "prob-alta" if "Alta" in prob else "prob-media"
                 
-                # Construir etiquetas en una sola línea HTML
+                # Preparamos las etiquetas
                 tags = str(fila.iloc[2]).split('|')
                 tags_html = "".join([f'<span class="tag" style="background:{get_tag_color(t.strip())};">{t.strip()}</span>' for t in tags])
                 
-                # Tarjeta Completa
+                # Renderizamos la Tarjeta (Burbuja)
                 st.markdown(f"""
                 <div class="subs-card">
                     <img src="{get_sector_image(fila.iloc[5], fila.iloc[1])}" class="card-img">
-                    <span class="badge-prob {p_class}">{prob}</span>
+                    <span class="badge-prob {p_class}">● {prob}</span>
                     <div class="sub-title">{fila.iloc[1]}</div>
                     <div class="tag-container">{tags_html}</div>
                     <p class="data-label">💰 Cuantía estimada</p>
                     <p class="data-value">{fila.iloc[3]}</p>
-                    <p class="data-label">⏳ Plazo límite</p>
+                    <p class="data-label">⏳ Plazo de presentación</p>
                     <p class="data-value">{fila.iloc[4]}</p>
                 </div>
                 """, unsafe_allow_html=True)
                 
-                # Expander fuera del bloque HTML para que funcione
-                with st.expander("🚀 ANALIZAR EXPEDIENTE IA"):
-                    t1, t2 = st.tabs(["ESTRATEGIA", "REQUISITOS"])
+                # Desplegable fuera del HTML
+                with st.expander("🚀 ANALIZAR OPORTUNIDAD"):
+                    t1, t2 = st.tabs(["💡 Estrategia", "⚖️ Requisitos"])
                     with t1:
                         st.write(fila.iloc[6])
-                        st.info(f"**OPORTUNIDAD:** {fila.iloc[7]}")
+                        st.info(f"**Justificación:** {fila.iloc[7]}")
                     with t2:
                         st.write(fila.iloc[8])
-                    st.link_button("🔗 VER EN EL BOE", str(fila.iloc[0]), use_container_width=True)
+                    st.link_button("🔗 ABRIR EXPEDIENTE BOE", str(fila.iloc[0]), use_container_width=True)
                 
-                st.write("") # Espaciador
+                st.write("") 
 
-    st.caption("Radar Terminal v8.0 • 2025")
+    st.caption("Radar Terminal v9.0 • Premium Intelligence • 2025")
