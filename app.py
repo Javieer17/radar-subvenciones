@@ -3,21 +3,19 @@ import pandas as pd
 import requests
 import io
 
-# 1. CONFIGURACIÓN DE PÁGINA (Tema Oscuro Premium)
+# 1. CONFIGURACIÓN DE PÁGINA (Estilo Pro)
 st.set_page_config(
-    page_title="Radar de Subvenciones Pro",
+    page_title="Radar de Subvenciones Inteligente",
     page_icon="📡",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# --- ESTILOS CSS PERSONALIZADOS (El "maquillaje") ---
+# --- ESTILOS CSS PERSONALIZADOS ---
 st.markdown("""
     <style>
-    /* Fondo y fuente general */
     .main { background-color: #0e1117; font-family: 'Inter', sans-serif; }
     
-    /* Estilo de las tarjetas */
     .subs-card {
         background-color: #1d2129;
         border-radius: 15px;
@@ -31,29 +29,38 @@ st.markdown("""
         border-color: #58a6ff;
     }
     
-    /* Badges de probabilidad */
-    .badge {
+    .badge-prob {
         padding: 4px 12px;
         border-radius: 20px;
-        font-size: 12px;
+        font-size: 14px;
         font-weight: bold;
-        text-transform: uppercase;
+        float: right;
     }
-    .badge-alta { background-color: #238636; color: white; }
-    .badge-media { background-color: #9e6a03; color: white; }
-    .badge-baja { background-color: #da3633; color: white; }
     
-    /* Imagen de cabecera de tarjeta */
     .card-img {
         width: 100%;
-        height: 150px;
+        height: 160px;
         object-fit: cover;
-        border-radius: 10px;
+        border-radius: 12px;
         margin-bottom: 15px;
+        border: 1px solid #30363d;
+    }
+
+    .tag {
+        display: inline-block;
+        color: white;
+        padding: 3px 12px;
+        border-radius: 15px;
+        margin-right: 8px;
+        margin-bottom: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
     </style>
     """, unsafe_allow_html=True)
 
+# 2. CARGA DE DATOS
 @st.cache_data(ttl=60)
 def load_data():
     sheet_id = "1XpsEMDFuvV-0fYM51ajDTdtZz21MGFp7t-M-bkrNpRk"
@@ -67,19 +74,18 @@ def load_data():
     except:
         return None
 
-# --- DICCIONARIO DE IMÁGENES POR SECTOR ---
-# Esto asigna una foto profesional según la palabra que encuentre en "Sector"
+# 3. LÓGICA DE IMÁGENES POR SECTOR
 def get_sector_image(sector):
-    sector = str(sector).lower()
-    if 'energ' in sector or 'foto' in sector:
+    s = str(sector).lower()
+    if 'energ' in s or 'foto' in s:
         return "https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&q=80&w=800"
-    elif 'industr' in sector or 'cvi' in sector:
+    elif 'industr' in s or 'cvi' in s:
         return "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=800"
-    elif 'agro' in sector or 'campo' in sector:
+    elif 'agro' in s or 'campo' in s:
         return "https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?auto=format&fit=crop&q=80&w=800"
-    elif 'digital' in sector or 'tic' in sector:
+    elif 'digital' in s or 'tic' in s:
         return "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=800"
-    elif 'transporte' in sector or 'moves' in sector:
+    elif 'transporte' in s or 'moves' in s:
         return "https://images.unsplash.com/photo-1593941707882-a5bba14938c7?auto=format&fit=crop&q=80&w=800"
     else:
         return "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&q=80&w=800"
@@ -88,61 +94,83 @@ df = load_data()
 
 # --- HEADER PRINCIPAL ---
 st.title("📡 Radar de Inteligencia de Subvenciones")
-st.markdown("##### Análisis en tiempo real del BOE mediante IA")
+st.markdown("##### Detección estratégica mediante IA del Boletín Oficial del Estado")
 
 if df is not None:
-    # Métricas rápidas arriba
+    # Métricas
     c1, c2, c3 = st.columns(3)
-    c1.metric("Ayudas Detectadas", len(df))
-    c2.metric("Sectores Activos", len(df.iloc[:, 5].unique()))
-    c3.metric("Última Actualización", "Hoy 08:00")
+    c1.metric("Oportunidades", len(df))
+    c2.metric("Sectores Clave", len(df.iloc[:, 5].unique()))
+    c3.metric("Status", "En tiempo real")
     
     st.divider()
 
-    # --- GRID DE TARJETAS (2 por fila para que se vea más moderno) ---
+    # --- GRID DE TARJETAS (2 columnas) ---
     cols = st.columns(2)
     
     for i in range(len(df)):
         fila = df.iloc[i]
         if pd.isna(fila.iloc[1]): continue
         
-        # Elegimos en qué columna poner la tarjeta (alternando)
         with cols[i % 2]:
-            # Contenedor con borde y sombra (vía CSS)
             with st.container():
+                # HTML para la Imagen y la Probabilidad
+                prob_text = str(fila.iloc[9]).strip()
+                prob_color = "#238636" if "Alta" in prob_text else "#9e6a03" if "Media" in prob_text else "#455A64"
+                
                 st.markdown(f"""
                 <div class="subs-card">
                     <img src="{get_sector_image(fila.iloc[5])}" class="card-img">
-                </div>
+                    <div style="margin-bottom: 10px;">
+                        <span class="badge-prob" style="color:{prob_color}; border: 1px solid {prob_color}; padding: 2px 10px; border-radius:10px;">
+                            ● {prob_text}
+                        </span>
+                        <h3 style="margin-top:0;">{fila.iloc[1]}</h3>
+                    </div>
                 """, unsafe_allow_html=True)
                 
-                # Título y Probabilidad
-                p = str(fila.iloc[9]).strip()
-                p_class = "badge-alta" if "Alta" in p else "badge-media" if "Media" in p else "badge-baja"
+                # --- SISTEMA DE ETIQUETAS PRO ---
+                # Separamos el mix: Territorial | Financiero | Fondos
+                partes_ambito = str(fila.iloc[2]).split('|')
                 
-                col_t, col_p = st.columns([3, 1])
-                col_t.subheader(fila.iloc[1])
-                col_p.markdown(f'<span class="badge {p_class}">{p}</span>', unsafe_allow_html=True)
+                etiquetas_html = '<div style="margin-bottom: 15px;">'
+                for p in partes_ambito:
+                    p = p.strip()
+                    if "Next" in p or "PRTR" in p:
+                        color, icon = "#1565C0", "🇪🇺" # Azul UE
+                    elif "Subvención" in p or "Fondo Perdido" in p:
+                        color, icon = "#2E7D32", "💰" # Verde Dinero
+                    elif "Préstamo" in p:
+                        color, icon = "#C62828", "🏦" # Rojo Banco
+                    else:
+                        color, icon = "#455A64", "📍" # Gris Ubicación
+                    
+                    etiquetas_html += f'<span class="tag" style="background-color:{color};">{icon} {p}</span>'
+                
+                etiquetas_html += '</div>'
+                st.markdown(etiquetas_html, unsafe_allow_html=True)
                 
                 # Datos rápidos
-                st.write(f"💰 **Cuantía:** {fila.iloc[3]}")
-                st.write(f"📅 **Plazo:** {fila.iloc[4]}")
+                st.write(f"💵 **Cuantía:** {fila.iloc[3]}")
+                st.write(f"⏰ **Plazo:** {fila.iloc[4]}")
                 st.write(f"🏢 **Sector:** {fila.iloc[5]}")
                 
                 # Detalles expandibles
-                with st.expander("🔍 Análisis e Información Detallada"):
-                    st.markdown("#### 📋 Resumen")
-                    st.write(fila.iloc[6])
-                    st.markdown("#### 🎯 Oportunidad de Negocio")
-                    st.info(fila.iloc[7])
-                    st.markdown("#### ⚖️ Requisitos")
-                    st.write(fila.iloc[8])
+                with st.expander("📄 Ver Análisis de Negocio y Requisitos"):
+                    t1, t2 = st.tabs(["💡 Oportunidad", "⚖️ Requisitos"])
+                    with t1:
+                        st.markdown("**Resumen Ejecutivo:**")
+                        st.write(fila.iloc[6])
+                        st.info(f"**Justificación:** {fila.iloc[7]}")
+                    with t2:
+                        st.write(fila.iloc[8])
+                    
                     st.divider()
-                    st.link_button("🔗 Ir al documento oficial del BOE", str(fila.iloc[0]))
+                    st.link_button("🔗 Ver documentación en BOE", str(fila.iloc[0]))
                 
-                st.write("") # Espaciado
+                st.write("---") # Espaciador visual
 
 else:
-    st.error("No se pudo cargar la base de datos.")
+    st.error("Error cargando la base de datos de Google Sheets.")
 
-st.caption("Tecnología: n8n + Groq Llama 3 + Streamlit Cloud")
+st.caption("Radar Inteligente v3.0 | Hecho por Javi con n8n + Groq + Streamlit")
