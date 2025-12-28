@@ -3,83 +3,89 @@ import pandas as pd
 import requests
 import io
 
-# 1. CONFIGURACIÓN VISUAL
+# 1. CONFIGURACIÓN VISUAL PRO
 st.set_page_config(page_title="Radar Subvenciones", layout="wide", page_icon="🚀")
 
-@st.cache_data(ttl=30) # Cache de solo 30 segundos para pruebas
+@st.cache_data(ttl=30)
 def load_data_final():
     sheet_id = "1XpsEMDFuvV-0fYM51ajDTdtZz21MGFp7t-M-bkrNpRk"
     url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv"
     try:
         response = requests.get(url, timeout=10)
         response.raise_for_status()
-        df = pd.read_csv(io.StringIO(response.text))
         
-        # LIMPIEZA TOTAL DE COLUMNAS
-        # Quitamos espacios, tildes y ponemos en minúsculas para que no falle nada
-        df.columns = [str(c).strip().lower()
-                      .replace('á', 'a').replace('é', 'e')
-                      .replace('í', 'i').replace('ó', 'o')
-                      .replace('ú', 'u') for c in df.columns]
+        # TRUCO PARA LOS ACENTOS: Forzamos la lectura en UTF-8
+        contenido = response.content.decode('utf-8')
+        df = pd.read_csv(io.StringIO(contenido))
+        
+        # Limpieza de columnas
+        df.columns = [str(c).strip() for c in df.columns]
         return df
     except Exception as e:
         return f"Error: {str(e)}"
 
-# Cargar los datos
 df = load_data_final()
 
+# --- ESTILO PERSONALIZADO ---
+st.markdown("""
+    <style>
+    .main { background-color: #0e1117; }
+    .stExpander { border: 1px solid #30363d !important; border-radius: 8px !important; }
+    </style>
+    """, unsafe_allow_html=True)
+
 st.title("🚀 Radar de Subvenciones Inteligente")
-st.markdown("Oportunidades del BOE analizadas por IA.")
+st.markdown("Oportunidades del BOE detectadas y analizadas por Inteligencia Artificial.")
+st.divider()
 
 if isinstance(df, str):
     st.error(f"Error de conexión: {df}")
 else:
-    # --- BUSCADOR DE COLUMNAS POR ORDEN (SISTEMA SEGURO) ---
-    # En lugar de nombres, usamos la posición según la lista que me has pasado
-    # ID(0), Título(1), Ámbito(2), Cuantía(3), Plazo(4), Sector(5), Resumen(6), Justificación(7), Requisitos(8), Probabilidad(9)
+    # Usamos las posiciones que ya sabemos que funcionan
+    # 0:ID, 1:Título, 2:Ámbito, 3:Cuantía, 4:Plazo, 5:Sector, 6:Resumen, 7:Justificación, 8:Requisitos, 9:Probabilidad
     
-    try:
-        # Extraemos las columnas por posición para que no importe el nombre
-        # Usamos .iloc para mayor seguridad
-        for i in range(len(df)):
-            fila = df.iloc[i]
+    for i in range(len(df)):
+        fila = df.iloc[i]
+        if pd.isna(fila.iloc[1]): continue # Saltamos filas vacías
+
+        with st.container():
+            # Título y Probabilidad en la misma línea
+            col_t, col_p = st.columns([5, 1])
+            with col_t:
+                st.subheader(fila.iloc[1])
+            with col_p:
+                p = str(fila.iloc[9]).strip()
+                color = "green" if "Alta" in p else "orange" if "Media" in p else "gray"
+                st.markdown(f"### :{color}[{p}]")
             
-            with st.container(border=True):
-                col_izq, col_der = st.columns([4, 1])
-                
-                with col_izq:
-                    # Columna 1: Título
-                    st.subheader(fila.iloc[1])
-                    # Columna 3: Cuantía | Columna 4: Plazo
-                    st.write(f"**💰 Cuantía:** {fila.iloc[3]} | **📅 Plazo:** {fila.iloc[4]}")
-                    # Columna 5: Sector
-                    st.write(f"**🏢 Sector:** {fila.iloc[5]}")
-                
-                with col_der:
-                    # Columna 9: Probabilidad
-                    p = str(fila.iloc[9]).lower()
-                    color = "green" if "alta" in p else "orange" if "med" in p else "gray"
-                    st.markdown(f"### :{color}[{fila.iloc[9]}]")
+            # Datos clave con iconos
+            c1, c2, c3 = st.columns(3)
+            with c1:
+                st.markdown(f"**💰 Cuantía:**\n{fila.iloc[3]}")
+            with c2:
+                # Si el plazo es un número (error de Excel), lo mostramos tal cual o avisamos
+                plazo = fila.iloc[4]
+                st.markdown(f"**📅 Plazo:**\n{plazo}")
+            with c3:
+                st.markdown(f"**🏢 Sector:**\n{fila.iloc[5]}")
 
-                with st.expander("🔍 Ver análisis detallado y requisitos"):
-                    c1, c2 = st.columns(2)
-                    with c1:
-                        st.write("**Resumen:**")
-                        st.write(fila.iloc[6]) # Columna 6
-                        st.write("**Oportunidad:**")
-                        st.write(fila.iloc[7]) # Columna 7
-                    with c2:
-                        st.write("**Requisitos:**")
-                        st.write(fila.iloc[8]) # Columna 8
-                    
-                    st.divider()
-                    # Columna 0: ID (Enlace)
-                    st.link_button("🔗 Abrir en el BOE", str(fila.iloc[0]))
-                    
-    except Exception as e:
-        st.warning("Hay un problema con el formato de las filas.")
-        st.write("Columnas que veo:", df.columns.tolist())
-        st.write("Error:", e)
+            # Desplegable de análisis
+            with st.expander("🔍 Ver análisis detallado, justificación y requisitos"):
+                tab1, tab2 = st.tabs(["📋 Resumen y Oportunidad", "⚖️ Requisitos Legales"])
+                
+                with tab1:
+                    st.markdown("### Resumen")
+                    st.write(fila.iloc[6])
+                    st.markdown("### ¿Por qué es una oportunidad?")
+                    st.info(fila.iloc[7])
+                
+                with tab2:
+                    st.markdown("### Requisitos para acceder")
+                    st.write(fila.iloc[8])
+                
+                st.divider()
+                st.link_button("🔗 Abrir documentación oficial en el BOE", str(fila.iloc[0]))
+            
+            st.divider()
 
-st.divider()
-st.caption("Radar v2.0 - Funcionando sin depender de nombres de columnas")
+st.caption("Sistema Radar v2.1 | n8n + Groq AI + Streamlit Cloud")
