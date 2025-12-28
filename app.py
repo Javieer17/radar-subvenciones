@@ -5,8 +5,8 @@ import io
 
 # 1. CONFIGURACIÓN DE PÁGINA
 st.set_page_config(
-    page_title="Radar Subvenciones v18.0",
-    page_icon="⚡",
+    page_title="Radar Subvenciones v19.0",
+    page_icon="💎",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
@@ -28,7 +28,7 @@ def check_password():
 
 if check_password():
 
-    # --- DISEÑO CSS "NEON RESURRECTION" ---
+    # --- DISEÑO CSS "NEON HOVER & STABLE IMAGES" ---
     st.markdown("""
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap');
@@ -36,27 +36,28 @@ if check_password():
         /* Fondo Global */
         .stApp { background-color: #0b0e14 !important; }
         
-        /* LA BURBUJA (Contenedor Nativo) */
+        /* ESTILO BASE DE LA TARJETA */
         div[data-testid="stVerticalBlockBorderWrapper"] {
             background-color: #161b22 !important;
             border-radius: 30px !important;
             border: 1px solid rgba(255,255,255,0.08) !important;
             padding: 0px !important;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
-            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+            transition: all 0.4s ease-in-out !important;
             margin-bottom: 30px !important;
             overflow: hidden !important;
         }
         
-        /* EL EFECTO QUE QUERÍAS: Escala + Brillo Azul Intenso */
+        /* --- EL EFECTO HOVER AZULADO Y LEVANTADO --- */
         div[data-testid="stVerticalBlockBorderWrapper"]:hover {
-            border-color: #58a6ff !important;
-            transform: translateY(-10px) scale(1.02) !important;
-            box-shadow: 0 0 35px rgba(88, 166, 255, 0.6) !important;
-            z-index: 100 !important;
+            border-color: #00f2ff !important; /* Borde Cian */
+            transform: translateY(-12px) scale(1.01) !important; /* Levantar */
+            box-shadow: 0 0 40px rgba(0, 242, 255, 0.25) !important; /* Resplandor */
+            background-color: #1a2332 !important; /* Fondo se vuelve ligeramente azulado */
+            cursor: pointer;
         }
 
-        /* Cabecera de imagen (HTML Fondo) */
+        /* Cabecera de imagen (Fondo HTML) */
         .header-box {
             width: 100%;
             height: 240px;
@@ -64,10 +65,9 @@ if check_password():
             background-position: center;
             border-radius: 30px 30px 0 0;
             margin-top: -1px;
-            border-bottom: 1px solid rgba(88, 166, 255, 0.2);
+            border-bottom: 1px solid rgba(0, 242, 255, 0.1);
         }
 
-        /* Cuerpo de la tarjeta */
         .card-body {
             padding: 25px;
             color: white;
@@ -92,25 +92,27 @@ if check_password():
             text-transform: uppercase;
             margin-right: 6px;
             margin-bottom: 8px;
-            background: rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.05);
             border: 1px solid rgba(255,255,255,0.1);
         }
 
-        /* Datos centrados y bonitos */
+        /* Datos centrados */
         .info-pill {
-            background: rgba(13, 17, 23, 0.8);
+            background: rgba(11, 14, 20, 0.6);
             border-radius: 15px;
             padding: 15px;
             text-align: center;
-            border: 1px solid rgba(88, 166, 255, 0.15);
+            border: 1px solid rgba(0, 242, 255, 0.1);
             transition: 0.3s;
         }
-        .info-pill:hover {
-            background: rgba(88, 166, 255, 0.1);
-            border-color: #58a6ff;
+        
+        div[data-testid="stVerticalBlockBorderWrapper"]:hover .info-pill {
+            border-color: #00f2ff;
+            background: rgba(0, 242, 255, 0.05);
         }
+
         .info-label { color: #8b949e !important; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px;}
-        .info-value { color: #58a6ff !important; font-size: 20px !important; font-weight: 900; margin: 0; }
+        .info-value { color: #00f2ff !important; font-size: 20px !important; font-weight: 900; margin: 0; }
 
         /* Expander */
         .stExpander {
@@ -146,33 +148,40 @@ if check_password():
         if "estatal" in t: return "#8957e5"
         return "#444c56"
 
-    # 4. IMÁGENES NUEVAS Y FRESCAS
+    # 4. IMÁGENES REPARADAS (Enlaces directos estables)
     def get_sector_image(sector, titulo):
         combined = (str(sector) + " " + str(titulo)).lower()
         
-        # Nuevos IDs de Unsplash para cambiar el look
-        ids = {
-            'dana': '1593113598332-cd288d649433', # Manos/Comunidad
-            'univ': '1524178232363-1fb2b075b655', # Biblioteca moderna
-            'solar': '1497435334941-8c899ee9e8e9', # Panel Solar Limpio
-            'indus': '1565467311310-985f679786a3', # Robot Industrial
-            'digital': '1550751827-4bd374c3f58b', # Código/Tech
-            'global': '1451187580459-43490279c0fa' # Tech azul
+        # Enlaces directos a imágenes que NO fallan
+        urls = {
+            'solar': 'https://images.unsplash.com/photo-1509391366360-2e959784a276?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
+            'wind': 'https://images.unsplash.com/photo-1466611653911-954ff21b6724?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
+            'industry': 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
+            'digital': 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
+            'agri': 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
+            'social': 'https://images.unsplash.com/photo-1593113598332-cd288d649433?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80', # Manos unidas
+            'education': 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80', # Biblioteca
+            'car': 'https://images.unsplash.com/photo-1617788138017-80ad40651399?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
+            'tech_general': 'https://images.unsplash.com/photo-1518770660439-4636190af475?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80'
         }
         
-        img = ids['global']
-        if 'dana' in combined: img = ids['dana']
-        elif any(x in combined for x in ['univ', 'lector', 'curso', 'beca']): img = ids['univ']
-        elif any(x in combined for x in ['solar', 'foto', 'placa']): img = ids['solar']
-        elif any(x in combined for x in ['indust', 'fabrica']): img = ids['indus']
-        elif any(x in combined for x in ['digital', 'tic', 'soft']): img = ids['digital']
+        img = urls['tech_general']
         
-        return f"https://images.unsplash.com/photo-{img}?q=80&w=1000&auto=format&fit=crop"
+        if 'dana' in combined or 'social' in combined: img = urls['social']
+        elif any(x in combined for x in ['univ', 'maec', 'beca', 'lector']): img = urls['education']
+        elif any(x in combined for x in ['solar', 'placa']): img = urls['solar']
+        elif 'eolic' in combined: img = urls['wind']
+        elif any(x in combined for x in ['indust', 'fabrica']): img = urls['industry']
+        elif any(x in combined for x in ['agro', 'campo']): img = urls['agri']
+        elif any(x in combined for x in ['coche', 'vehicul', 'moves']): img = urls['car']
+        elif any(x in combined for x in ['digit', 'tic', 'soft']): img = urls['digital']
+        
+        return img
 
     df = load_data()
 
     # --- UI ---
-    st.markdown("<h1 style='color: #58a6ff; font-weight: 900; letter-spacing: -1px;'>📡 Radar de Inteligencia Estratégica</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='color: #00f2ff; font-weight: 900; letter-spacing: -1px;'>📡 Radar de Inteligencia Estratégica</h1>", unsafe_allow_html=True)
     query = st.text_input("🔍 FILTRAR RESULTADOS", placeholder="Buscar por palabra clave...")
 
     if df is not None:
@@ -186,11 +195,11 @@ if check_password():
             
             with cols[i % 2]:
                 with st.container(border=True):
-                    # Foto Nueva (Header)
+                    # FOTO (Header Box)
                     img_url = get_sector_image(fila.iloc[5], fila.iloc[1])
                     st.markdown(f'<div class="header-box" style="background-image: url(\'{img_url}\');"></div>', unsafe_allow_html=True)
                     
-                    # Contenido
+                    # CONTENIDO
                     st.markdown('<div class="card-body">', unsafe_allow_html=True)
                     
                     # Probabilidad
@@ -202,36 +211,4 @@ if check_password():
                     st.markdown(f'<div class="sub-title">{fila.iloc[1]}</div>', unsafe_allow_html=True)
                     
                     # Tags
-                    tags = str(fila.iloc[2]).split('|')
-                    tags_html = "".join([f'<span class="tag-pill" style="background:{get_tag_color(t.strip())};">{t.strip()}</span>' for t in tags])
-                    st.markdown(f'<div style="margin-bottom: 20px;">{tags_html}</div>', unsafe_allow_html=True)
-                    
-                    # Expander
-                    with st.expander("🚀 ANALIZAR OPORTUNIDAD"):
-                        st.markdown("**Resumen:**")
-                        st.write(fila.iloc[6])
-                        st.info(f"**Justificación:** {fila.iloc[7]}")
-                        st.write(fila.iloc[8])
-                        st.link_button("🔗 VER BOE", str(fila.iloc[0]), use_container_width=True)
-                    
-                    # Datos Abajo (Diseño Apple)
-                    st.write("")
-                    c_1, c_2 = st.columns(2)
-                    with c_1:
-                        st.markdown(f'''
-                            <div class="info-pill">
-                                <p class="info-label">💰 Cuantía</p>
-                                <p class="info-value">{fila.iloc[3]}</p>
-                            </div>
-                        ''', unsafe_allow_html=True)
-                    with c_2:
-                        st.markdown(f'''
-                            <div class="info-pill">
-                                <p class="info-label">⏳ Plazo</p>
-                                <p class="info-value">{fila.iloc[4]}</p>
-                            </div>
-                        ''', unsafe_allow_html=True)
-                    
-                    st.markdown('</div>', unsafe_allow_html=True)
-
-    st.caption("Radar Terminal v18.0 • Neon Resurrection • 2025")
+                    tags = str(fila.ilo
