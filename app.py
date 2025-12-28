@@ -3,18 +3,124 @@ import pandas as pd
 import requests
 import io
 
-# ---------------------------------------------------------
-# 1. CONFIGURACIÓN DEL NÚCLEO (ENGINE)
-# ---------------------------------------------------------
+# 1. CONFIGURACIÓN DE PÁGINA
 st.set_page_config(
-    page_title="Radar Subvenciones AI | NOVA",
-    page_icon="💎",
+    page_title="Radar Subvenciones AI | Clean Pro",
+    page_icon="🟦",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
 
 # ---------------------------------------------------------
-# 2. SISTEMA DE SEGURIDAD
+# CSS "CLEAN CORPORATE" - SIN ERRORES DE COLOR
+# ---------------------------------------------------------
+st.markdown("""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+    
+    /* 1. FONDO DE LA APP (Gris Muy Claro Profesional) */
+    .stApp {
+        background-color: #F2F4F8 !important;
+        font-family: 'Inter', sans-serif !important;
+    }
+    
+    /* 2. TEXTOS (Siempre oscuros para que se lean bien) */
+    h1, h2, h3, h4, p, span, div, li {
+        color: #1F2937 !important; /* Gris Oscuro casi negro */
+    }
+    
+    /* Títulos azules para destacar */
+    h1 { color: #2563EB !important; } 
+
+    /* 3. INPUTS (Buscador y Clave) */
+    .stTextInput input {
+        background-color: #FFFFFF !important;
+        color: #000000 !important;
+        border: 1px solid #D1D5DB !important;
+        border-radius: 8px !important;
+    }
+
+    /* 4. LA TARJETA (BURBUJA) - BLANCA Y LIMPIA */
+    div[data-testid="stVerticalBlockBorderWrapper"] {
+        background-color: #FFFFFF !important;
+        border: 1px solid #E5E7EB !important; /* Borde gris muy suave */
+        border-radius: 16px !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
+        padding: 16px !important; /* Streamlit pone esto, lo compensamos en la foto */
+        transition: all 0.3s ease-in-out !important;
+        overflow: hidden !important;
+    }
+
+    /* 5. EL HOVER (Borde Azul + Levantar) */
+    div[data-testid="stVerticalBlockBorderWrapper"]:hover {
+        transform: translateY(-5px) !important;
+        border-color: #2563EB !important; /* AZUL FUERTE */
+        box-shadow: 0 20px 25px -5px rgba(37, 99, 235, 0.15) !important; /* Sombra azulada suave */
+        z-index: 10;
+        cursor: pointer;
+    }
+
+    /* 6. FOTO QUE ENCAJA PERFECTA (TRUCO DE MÁRGENES NEGATIVOS) */
+    .card-img-top {
+        width: calc(100% + 32px) !important; /* Compensamos el padding */
+        margin-left: -16px !important;       /* Movemos a la izquierda */
+        margin-top: -16px !important;        /* Movemos arriba */
+        margin-right: -16px !important;      /* Movemos a la derecha */
+        height: 200px !important;
+        object-fit: cover;
+        border-radius: 16px 16px 0 0 !important; /* Redondeamos solo arriba */
+        display: block;
+        margin-bottom: 15px;
+        border-bottom: 1px solid #E5E7EB;
+    }
+
+    /* 7. ETIQUETAS (TAGS) */
+    .tag-pill {
+        display: inline-block;
+        color: white !important;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        margin-right: 5px;
+        margin-bottom: 5px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+
+    /* 8. DATOS (CUANTIA/PLAZO) - ESTILO AZUL */
+    .info-box {
+        background-color: #F3F4F6;
+        border-radius: 8px;
+        padding: 10px;
+        text-align: center;
+        border: 1px solid #E5E7EB;
+    }
+    .info-label {
+        font-size: 10px !important;
+        color: #6B7280 !important; /* Gris medio */
+        font-weight: 800 !important;
+        text-transform: uppercase;
+    }
+    .info-value {
+        font-size: 16px !important;
+        color: #2563EB !important; /* Azul Principal */
+        font-weight: 900 !important;
+    }
+    
+    /* Expander limpio */
+    .stExpander {
+        border: none !important;
+        background: transparent !important;
+    }
+    
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    </style>
+    """, unsafe_allow_html=True)
+
+# ---------------------------------------------------------
+# SEGURIDAD
 # ---------------------------------------------------------
 def check_password():
     def password_entered():
@@ -25,121 +131,16 @@ def check_password():
             st.session_state["password_correct"] = False
 
     if "password_correct" not in st.session_state:
-        st.markdown("""
-            <style>
-            .stApp { background-color: #000000; }
-            h1 { color: #00f2ff; text-align: center; font-family: sans-serif; }
-            </style>
-            <br><br><br>
-            <h1>🔐 ACCESO BIOMÉTRICO</h1>
-            """, unsafe_allow_html=True)
-        st.text_input("CLAVE DE ACCESO", type="password", on_change=password_entered, key="password")
+        st.markdown("<br><br>", unsafe_allow_html=True)
+        st.markdown("<h1 style='text-align: center;'>🔐 ACCESO RESTRINGIDO</h1>", unsafe_allow_html=True)
+        st.text_input("Contraseña", type="password", on_change=password_entered, key="password")
         return False
     return True
 
 if check_password():
 
     # ---------------------------------------------------------
-    # 3. ESTILOS CSS "NOVA ENGINE" (NUEVO DISEÑO)
-    # ---------------------------------------------------------
-    st.markdown("""
-        <style>
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&display=swap');
-        
-        /* --- FONDO GLOBAL --- */
-        .stApp {
-            background-color: #050505 !important;
-            font-family: 'Outfit', sans-serif !important;
-        }
-
-        /* --- ARREGLO DE TEXTOS --- */
-        p, li, span, div {
-            color: #e0e0e0 !important;
-        }
-        h1, h2, h3 { color: white !important; }
-
-        /* --- LA TARJETA (CONTENEDOR) --- */
-        /* Buscamos el contenedor de borde de Streamlit y lo tuneamos */
-        div[data-testid="stVerticalBlockBorderWrapper"] {
-            background-color: #11141a !important;
-            border: 1px solid rgba(255, 255, 255, 0.05) !important;
-            border-radius: 24px !important;
-            padding: 0px !important; /* CRUCIAL: Sin padding para que la foto toque los bordes */
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important;
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
-            overflow: hidden !important;
-        }
-
-        /* --- EFECTO HOVER (EL QUE TE GUSTA) --- */
-        div[data-testid="stVerticalBlockBorderWrapper"]:hover {
-            transform: translateY(-8px) scale(1.01) !important;
-            border-color: #00f2ff !important; /* CIAN NEÓN */
-            box-shadow: 0 0 40px rgba(0, 242, 255, 0.15) !important;
-            z-index: 10;
-        }
-
-        /* --- HACK PARA LA FOTO FULL WIDTH --- */
-        /* Esto hace que la imagen ignore los márgenes de Streamlit */
-        .full-width-img {
-            width: calc(100% + 2rem);
-            margin-left: -1rem;
-            margin-top: -1rem;
-            margin-right: -1rem;
-            height: 240px;
-            object-fit: cover;
-            border-bottom: 2px solid #00f2ff;
-            mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
-        }
-
-        /* --- TIPOGRAFÍA Y ETIQUETAS --- */
-        .card-title {
-            font-size: 22px !important;
-            font-weight: 800 !important;
-            line-height: 1.2;
-            color: #ffffff !important;
-            margin-top: 15px;
-            margin-bottom: 15px;
-        }
-
-        .tag {
-            display: inline-block;
-            padding: 5px 12px;
-            border-radius: 6px;
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-right: 5px;
-            margin-bottom: 5px;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-
-        /* --- METRICAS (PRECIO Y PLAZO) --- */
-        .metric-box {
-            background: rgba(0, 242, 255, 0.05);
-            border-radius: 12px;
-            padding: 12px;
-            text-align: center;
-            border: 1px solid rgba(0, 242, 255, 0.1);
-            margin-top: 10px;
-        }
-        .metric-label { font-size: 10px; text-transform: uppercase; color: #888; font-weight: 700; }
-        .metric-value { font-size: 18px; color: #00f2ff !important; font-weight: 900; }
-
-        /* --- BOTONES Y EXPANDER --- */
-        .stExpander {
-            border: none !important;
-            background: transparent !important;
-        }
-        button {
-            border-radius: 8px !important;
-            font-weight: bold !important;
-        }
-        </style>
-    """, unsafe_allow_html=True)
-
-    # ---------------------------------------------------------
-    # 4. LÓGICA DE DATOS E IMÁGENES (CURADAS MANUALMENTE)
+    # LÓGICA Y DATOS
     # ---------------------------------------------------------
     @st.cache_data(ttl=60)
     def load_data():
@@ -152,113 +153,91 @@ if check_password():
             return df
         except: return None
 
-    # DICCIONARIO DE IMÁGENES QUE FUNCIONAN (ENLACES DIRECTOS)
-    def get_img(texto_sector, titulo):
-        s = (str(texto_sector) + " " + str(titulo)).lower()
-        
-        # Enlaces directos a fotos específicas de Unsplash que encajan perfecto
-        urls = {
-            'dana': 'https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&w=800&q=80', # Manos unidas
-            'univ': 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=800&q=80', # Universidad Auditorio
-            'tech': 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80', # Chip IA
-            'solar': 'https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&w=800&q=80', # Panel Solar
-            'indus': 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=80', # Fábrica
-            'agri': 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?auto=format&fit=crop&w=800&q=80', # Tractor moderno
-            'default': 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80' # Mundo conectado
-        }
-        
-        if 'dana' in s or 'tercer sector' in s: return urls['dana']
-        if any(x in s for x in ['univ', 'maec', 'lector', 'beca']): return urls['univ']
-        if any(x in s for x in ['solar', 'placa', 'energ']): return urls['solar']
-        if any(x in s for x in ['indus', 'manuf', 'fabrica']): return urls['indus']
-        if any(x in s for x in ['agro', 'campo']): return urls['agri']
-        if any(x in s for x in ['digit', 'tic', 'soft']): return urls['tech']
-        
-        return urls['default']
-
-    def get_tag_style(tag):
+    # COLORES DE ETIQUETAS (Siempre legibles)
+    def get_tag_color(tag):
         t = tag.lower()
-        bg = "#333"
-        if "next" in t: bg = "#0d47a1" # Azul oscuro
-        elif "subvenc" in t: bg = "#1b5e20" # Verde oscuro
-        elif "préstamo" in t: bg = "#b71c1c" # Rojo oscuro
-        return f'background-color: {bg};'
+        if "next" in t: return "#1E40AF" # Azul oscuro
+        if "subvenc" in t: return "#166534" # Verde oscuro
+        if "prestamo" in t: return "#991B1B" # Rojo oscuro
+        return "#374151" # Gris oscuro
 
-    # ---------------------------------------------------------
-    # 5. INTERFAZ VISUAL (UI)
-    # ---------------------------------------------------------
-    
-    # Header
-    col1, col2 = st.columns([3,1])
-    with col1:
-        st.markdown("<h1 style='text-align: left; margin-bottom: 0px;'>📡 RADAR DE INTELIGENCIA</h1>", unsafe_allow_html=True)
-        st.caption("ANALÍTICA ESTRATÉGICA EN TIEMPO REAL")
-    with col2:
-        search = st.text_input("🔍 FILTRAR", placeholder="Ej: DANA, Digital...")
+    # IMÁGENES ESTABLES (Picsum con keywords)
+    def get_sector_image(sector, titulo):
+        combined = (str(sector) + " " + str(titulo)).lower()
+        seed = "office" # Por defecto
+        
+        if 'dana' in combined: seed = "hands"
+        elif any(x in combined for x in ['univ', 'lector', 'beca']): seed = "books"
+        elif any(x in combined for x in ['solar', 'placa', 'energ']): seed = "solar"
+        elif 'eolic' in combined: seed = "wind"
+        elif any(x in combined for x in ['indust', 'fabrica']): seed = "factory"
+        elif any(x in combined for x in ['digital', 'tic', 'soft']): seed = "laptop"
+        elif any(x in combined for x in ['agro', 'campo']): seed = "nature"
+        elif any(x in combined for x in ['coche', 'movilidad']): seed = "car"
+        
+        # Usamos Picsum Photos, muy rápido y estable
+        return f"https://picsum.photos/seed/{seed}/800/400"
 
     df = load_data()
 
-    if df is not None:
-        if search:
-            df = df[df.apply(lambda r: r.astype(str).str.contains(search, case=False).any(), axis=1)]
+    # ---------------------------------------------------------
+    # INTERFAZ (UI)
+    # ---------------------------------------------------------
+    st.title("📡 Radar de Inteligencia")
+    st.markdown("**Sistema de Monitorización de Oportunidades**")
+    
+    query = st.text_input("🔍 FILTRAR", placeholder="Buscar por palabra clave...")
 
-        # GRID DE TARJETAS
-        columnas = st.columns(2) # 2 columnas para que sean grandes
-        
-        for i, row in df.iterrows():
-            if pd.isna(row.iloc[1]): continue
+    if df is not None:
+        if query:
+            df = df[df.apply(lambda r: r.astype(str).str.contains(query, case=False).any(), axis=1)]
+
+        cols = st.columns(2)
+        for i in range(len(df)):
+            fila = df.iloc[i]
+            if pd.isna(fila.iloc[1]): continue
             
-            # Usamos el contenedor de Streamlit (que hemos tuneado con CSS arriba)
-            with columnas[i % 2]:
-                with st.container(border=True):
+            with cols[i % 2]:
+                with st.container(border=True): # Creamos la caja
                     
-                    # 1. IMAGEN (Hack CSS para que ocupe todo el ancho)
-                    img_src = get_img(row.iloc[5], row.iloc[1])
-                    st.markdown(f'<img src="{img_src}" class="full-width-img">', unsafe_allow_html=True)
+                    # 1. IMAGEN AJUSTADA (Con margen negativo para tocar bordes)
+                    img_url = get_sector_image(fila.iloc[5], fila.iloc[1])
+                    st.markdown(f'<img src="{img_url}" class="card-img-top">', unsafe_allow_html=True)
                     
-                    # 2. CONTENIDO (Padding interno)
-                    # Probabilidad
-                    prob = str(row.iloc[9]).strip()
-                    color_prob = "#00f2ff" if "Alta" in prob else "#ffcc00"
-                    
+                    # 2. PROBABILIDAD (Badge)
+                    prob = str(fila.iloc[9]).strip()
+                    color_badge = "#166534" if "Alta" in prob else "#854D0E"
+                    bg_badge = "#DCFCE7" if "Alta" in prob else "#FEF9C3"
                     st.markdown(f"""
-                        <div style="padding: 10px 15px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <span style="font-size: 10px; color: #888; font-weight: bold;">SECTOR: {str(row.iloc[5]).upper()}</span>
-                                <span style="color: {color_prob}; border: 1px solid {color_prob}; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 900;">{prob}</span>
-                            </div>
-                            <div class="card-title">{row.iloc[1]}</div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                            <span style="font-size:10px; font-weight:800; color:#9CA3AF;">SECTOR: {str(fila.iloc[5]).upper()}</span>
+                            <span style="background-color:{bg_badge}; color:{color_badge}; padding:4px 8px; border-radius:12px; font-size:11px; font-weight:800; border:1px solid {color_badge};">● {prob.upper()}</span>
                         </div>
                     """, unsafe_allow_html=True)
-
-                    # Tags
-                    tags = str(row.iloc[2]).split('|')
-                    tags_html = ""
-                    for t in tags:
-                        tags_html += f'<span class="tag" style="{get_tag_style(t)}">{t.strip()}</span>'
-                    st.markdown(f'<div style="padding: 0 15px;">{tags_html}</div>', unsafe_allow_html=True)
-
-                    # Metricas
+                    
+                    # 3. TÍTULO
+                    st.markdown(f'<h3 style="margin:0 0 15px 0; font-size:18px; line-height:1.4;">{fila.iloc[1]}</h3>', unsafe_allow_html=True)
+                    
+                    # 4. TAGS
+                    tags = str(fila.iloc[2]).split('|')
+                    tags_html = "".join([f'<span class="tag-pill" style="background:{get_tag_color(t.strip())};">{t.strip()}</span>' for t in tags])
+                    st.markdown(f'<div style="margin-bottom: 15px;">{tags_html}</div>', unsafe_allow_html=True)
+                    
+                    # 5. DATOS (Cajas Azules Claras)
                     c1, c2 = st.columns(2)
                     with c1:
-                        st.markdown(f'<div class="metric-box"><div class="metric-label">CUANTÍA</div><div class="metric-value">{row.iloc[3]}</div></div>', unsafe_allow_html=True)
+                        st.markdown(f'<div class="info-box"><div class="info-label">💰 Cuantía</div><div class="info-value">{fila.iloc[3]}</div></div>', unsafe_allow_html=True)
                     with c2:
-                        st.markdown(f'<div class="metric-box"><div class="metric-label">PLAZO</div><div class="metric-value">{row.iloc[4]}</div></div>', unsafe_allow_html=True)
+                        st.markdown(f'<div class="info-box"><div class="info-label">⏳ Plazo</div><div class="info-value">{fila.iloc[4]}</div></div>', unsafe_allow_html=True)
                     
-                    st.write("") # Espaciador
+                    st.write("")
                     
-                    # Botonera
-                    with st.expander("🚀 ESTRATEGIA Y REQUISITOS"):
-                        st.markdown("#### 🧠 Análisis IA")
-                        st.write(row.iloc[6])
-                        st.info(f"💡 **Oportunidad:** {row.iloc[7]}")
-                        st.markdown("#### 📋 Requisitos")
-                        st.write(row.iloc[8])
-                        st.link_button("🔗 ENLACE AL BOE", str(row.iloc[0]), use_container_width=True)
-                    
-                    st.write("") # Padding final
+                    # 6. EXPANDER
+                    with st.expander("Ver Detalles y Estrategia"):
+                        st.markdown("**Resumen:**")
+                        st.write(fila.iloc[6])
+                        st.info(f"**Justificación:** {fila.iloc[7]}")
+                        st.link_button("🔗 Abrir BOE Oficial", str(fila.iloc[0]), use_container_width=True)
 
-    else:
-        st.error("Error de conexión con la Base de Datos.")
-
-    st.markdown("<br><br><center style='color: #444;'>NOVA SYSTEM v1.0 | 2025</center>", unsafe_allow_html=True)
+    st.markdown("---")
+    st.caption("Sistema Radar v26.0 - Clean Corporate Edition")
