@@ -5,7 +5,7 @@ import io
 
 # 1. CONFIGURACIÓN DE PÁGINA
 st.set_page_config(
-    page_title="Radar Subvenciones AI v10.0",
+    page_title="Radar Subvenciones AI v11.0",
     page_icon="💎",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -28,10 +28,16 @@ def check_password():
 
 if check_password():
 
-    # --- DISEÑO CSS "PERFECT FIT" (MÁXIMA VARIEDAD Y AJUSTE) ---
+    # --- DISEÑO CSS "FORCE DARK" & INTEGRACIÓN TOTAL ---
     st.markdown("""
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap');
+        
+        /* FORZAR MODO OSCURO GLOBAL */
+        .stApp {
+            background-color: #0d1117 !important;
+            color: #ffffff !important;
+        }
         
         .main { background-color: #0d1117; font-family: 'Outfit', sans-serif; }
         
@@ -39,30 +45,30 @@ if check_password():
         .subs-card {
             background: #161b22;
             border-radius: 30px;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             border: 1px solid rgba(255,255,255,0.08);
             box-shadow: 0 15px 35px rgba(0,0,0,0.6);
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            overflow: hidden; /* Esto hace que la foto se corte con la forma de la burbuja */
+            transition: all 0.4s ease;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
         
         .subs-card:hover {
-            transform: translateY(-10px) scale(1.01);
             border-color: #58a6ff;
-            box-shadow: 0 20px 40px rgba(88, 166, 255, 0.2);
+            box-shadow: 0 10px 40px rgba(88, 166, 255, 0.15);
         }
         
-        /* Foto de Cabecera Ajustada al 100% */
+        /* Foto Ajustada */
         .card-img {
             width: 100%;
-            height: 230px;
+            height: 220px;
             object-fit: cover;
             border-bottom: 1px solid rgba(255,255,255,0.1);
         }
         
-        /* Contenido interno con padding */
         .card-content {
-            padding: 25px;
+            padding: 20px 25px;
         }
         
         .tag-container {
@@ -73,8 +79,8 @@ if check_password():
         }
         
         .tag {
-            color: white;
-            padding: 5px 12px;
+            color: white !important;
+            padding: 4px 12px;
             border-radius: 10px;
             font-size: 11px;
             font-weight: 800;
@@ -82,30 +88,44 @@ if check_password():
         }
         
         .sub-title {
-            color: #ffffff;
-            font-size: 22px !important;
+            color: #ffffff !important;
+            font-size: 20px !important;
             font-weight: 800 !important;
             line-height: 1.2;
-            min-height: 55px;
+            margin-top: 10px;
         }
         
         .data-value {
-            color: #58a6ff;
-            font-size: 20px;
+            color: #58a6ff !important;
+            font-size: 19px !important;
             font-weight: 800;
-            margin-bottom: 10px;
+        }
+        
+        .data-label {
+            color: #8b949e !important;
+            font-size: 12px;
+            font-weight: 700;
+            margin-bottom: -5px;
         }
 
         .badge-prob {
-            padding: 5px 12px;
+            padding: 4px 10px;
             border-radius: 8px;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 900;
             text-transform: uppercase;
             float: right;
         }
         .prob-alta { color: #3fb950; border: 1px solid #3fb950; background: rgba(63,185,80,0.1); }
         .prob-media { color: #d29922; border: 1px solid #d29922; background: rgba(210,153,34,0.1); }
+        
+        /* Ajuste para los Expanders dentro de la burbuja */
+        .stExpander {
+            background-color: transparent !important;
+            border: 1px solid rgba(255,255,255,0.1) !important;
+            border-radius: 15px !important;
+            margin-top: 10px !important;
+        }
         </style>
         """, unsafe_allow_html=True)
 
@@ -130,63 +150,39 @@ if check_password():
         if "estatal" in t: return "#8957e5" 
         return "#444c56"
 
-    # 4. GALERÍA DE IMÁGENES ULTRA-VARIADA (20 CATEGORÍAS)
+    # 4. GALERÍA DE IMÁGENES (IDs Limpios)
     def get_sector_image(sector, titulo):
         combined = (str(sector) + " " + str(titulo)).lower()
-        
-        # Diccionario de IDs de alta resolución (Unsplash)
         images = {
             'solar': '1509391366360-2e959784a276',
             'eolica': '1466611653911-954ff21b6724',
             'hidro': '1516937941524-747f48d6db12',
-            'hidrogeno': '1621533611164-72af051f1343',
             'industria': '1581091226825-a6a2a5aee158',
-            'manufactura': '1504917595217-d4dc5dba6ac6',
             'digital': '1518770660439-4636190af475',
-            'ia_software': '1550751827-4bd374c3f58b',
-            'agro_campo': '1523348837708-15d4a09cfac2',
-            'social_comunidad': '1469571486292-0ba58a3f068b',
-            'dana_emergencia': '1554123165-c84614e6092d',
-            'transporte_ev': '1506521781263-d8422e82f27a',
-            'logistica': '1586528116311-c39eb6a4db41',
+            'social': '1469571486292-0ba58a3f068b',
+            'dana': '1554123165-c84614e6092d',
+            'transporte': '1506521781263-d8422e82f27a',
             'educacion': '1523050853173-ee040a84139b',
-            'investigacion': '1532094349884-543bb118196d',
-            'vivienda_urb': '1486408736691-c99932400491',
-            'turismo_hotel': '1469854523086-cc02fe5d8800',
-            'salud_medica': '1505751172107-596229738e60',
-            'cultura_arte': '1460667380274-eb7ef7a04790',
-            'pesca_mar': '1498654203945-36283ca78f0d',
-            'global_tech': '1451187580459-43490279c0fa'
+            'vivienda': '1486408736691-c99932400491',
+            'global': '1451187580459-43490279c0fa'
         }
         
-        # Lógica de selección
-        img_id = images['global_tech']
-        if 'dana' in combined: img_id = images['dana_emergencia']
-        elif 'hidrogen' in combined: img_id = images['hidrogeno']
-        elif any(x in combined for x in ['lector', 'univ', 'docen', 'escuela']): img_id = images['educacion']
+        img_id = images['global']
+        if 'dana' in combined: img_id = images['dana']
+        elif any(x in combined for x in ['univ', 'docen', 'lector']): img_id = images['educacion']
         elif any(x in combined for x in ['energ', 'foto', 'placa']): img_id = images['solar']
-        elif 'eolic' in combined: img_id = images['eolica']
-        elif 'hidro' in combined: img_id = images['hidro']
-        elif any(x in combined for x in ['indust', 'manufact', 'cvi']): img_id = images['industria']
-        elif any(x in combined for x in ['agro', 'campo', 'forest', 'agri']): img_id = images['agro_campo']
-        elif any(x in combined for x in ['digital', 'tic', 'softw', 'ia']): img_id = images['ia_software']
-        elif any(x in combined for x in ['social', 'infan', 'tercer sector']): img_id = images['social_comunidad']
-        elif any(x in combined for x in ['transp', 'moves', 'vehic', 'electri']): img_id = images['transporte_ev']
-        elif any(x in combined for x in ['logist', 'camion', 'almacen']): img_id = images['logistica']
-        elif any(x in combined for x in ['investiga', 'ciencia', 'tecnol']): img_id = images['investigacion']
-        elif any(x in combined for x in ['edific', 'vivienda', 'rehabilit']): img_id = images['vivienda_urb']
-        elif any(x in combined for x in ['turism', 'hotel', 'viaje']): img_id = images['turismo_hotel']
-        elif any(x in combined for x in ['salud', 'medic', 'hospi']): img_id = images['salud_medica']
-        elif any(x in combined for x in ['cultur', 'arte', 'museo']): img_id = images['cultura_arte']
-        elif any(x in combined for x in ['pesca', 'mar', 'barco']): img_id = images['pesca_mar']
+        elif any(x in combined for x in ['indust', 'manufact']): img_id = images['industria']
+        elif any(x in combined for x in ['digital', 'tic', 'softw']): img_id = images['digital']
+        elif any(x in combined for x in ['social', 'infan', 'tercer']): img_id = images['social']
+        elif any(x in combined for x in ['transp', 'moves', 'vehic']): img_id = images['transporte']
+        elif any(x in combined for x in ['edific', 'vivienda']): img_id = images['vivienda']
         
-        # Retornamos la URL con parámetros de optimización para que cargue rápido
         return f"https://images.unsplash.com/photo-{img_id}?auto=format&fit=crop&w=800&q=80"
 
     df = load_data()
 
     # --- HEADER ---
-    st.markdown("<h1 style='color: #58a6ff; font-weight: 900; letter-spacing: -1px;'>📡 Radar de Inteligencia Estratégica</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='color: #58a6ff; font-weight: 900; margin-bottom:0;'>📡 Radar de Inteligencia Estratégica</h1>", unsafe_allow_html=True)
     query = st.text_input("🔍 FILTRAR POR PALABRA CLAVE", placeholder="Buscar por sector, CCAA, tipo...")
 
     if df is not None:
@@ -205,37 +201,43 @@ if check_password():
                 prob = str(fila.iloc[9]).strip()
                 p_class = "prob-alta" if "Alta" in prob else "prob-media"
                 
-                # Etiquetas
+                # Preparamos las etiquetas
                 tags = str(fila.iloc[2]).split('|')
                 tags_html = "".join([f'<span class="tag" style="background:{get_tag_color(t.strip())};">{t.strip()}</span>' for t in tags])
                 
-                # RENDERIZADO DE LA BURBUJA PERFECTA
-                st.markdown(f"""
-                <div class="subs-card">
-                    <img src="{get_sector_image(fila.iloc[5], fila.iloc[1])}" class="card-img">
-                    <div class="card-content">
-                        <span class="badge-prob {p_class}">● {prob}</span>
-                        <div class="sub-title">{fila.iloc[1]}</div>
-                        <div class="tag-container">{tags_html}</div>
-                        <p style="color: #8b949e; font-size: 13px; font-weight: 700; margin-bottom: 0;">💰 CUANTÍA ESTIMADA</p>
-                        <p class="data-value">{fila.iloc[3]}</p>
-                        <p style="color: #8b949e; font-size: 13px; font-weight: 700; margin-bottom: 0;">⏳ PLAZO LÍMITE</p>
-                        <p class="data-value">{fila.iloc[4]}</p>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                # Expander separado para que funcione el botón
-                with st.expander("🚀 ANALIZAR EXPEDIENTE COMPLETO"):
-                    t1, t2 = st.tabs(["💡 Estrategia", "⚖️ Requisitos"])
-                    with t1:
+                # INICIO DE LA BURBUJA
+                with st.container():
+                    # Parte superior: Imagen + Título + Tags
+                    st.markdown(f"""
+                    <div class="subs-card">
+                        <img src="{get_sector_image(fila.iloc[5], fila.iloc[1])}" class="card-img">
+                        <div class="card-content">
+                            <span class="badge-prob {p_class}">● {prob}</span>
+                            <div class="sub-title">{fila.iloc[1]}</div>
+                            <div class="tag-container">{tags_html}</div>
+                    """, unsafe_allow_html=True)
+                    
+                    # EL EXPANDER (AHORA INTEGRADO DENTRO)
+                    with st.expander("🚀 ANALIZAR OPORTUNIDAD"):
                         st.markdown("**Resumen IA:**")
                         st.write(fila.iloc[6])
-                        st.info(f"**Oportunidad:** {fila.iloc[7]}")
-                    with t2:
+                        st.info(f"**Justificación:** {fila.iloc[7]}")
+                        st.markdown("**Requisitos:**")
                         st.write(fila.iloc[8])
-                    st.link_button("🔗 ABRIR EN EL BOE", str(fila.iloc[0]), use_container_width=True)
+                        st.link_button("🔗 EXPEDIENTE BOE", str(fila.iloc[0]), use_container_width=True)
+                    
+                    # Parte inferior: Datos de cuantía y plazo
+                    st.markdown(f"""
+                            <div style="margin-top:15px;">
+                                <p class="data-label">💰 CUANTÍA ESTIMADA</p>
+                                <p class="data-value">{fila.iloc[3]}</p>
+                                <p class="data-label">⏳ PLAZO LÍMITE</p>
+                                <p class="data-value">{fila.iloc[4]}</p>
+                            </div>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
                 
-                st.write("") 
+                st.write("") # Espaciador
 
-    st.caption("Radar Terminal v10.0 • Master Vision • 2025")
+    st.caption("Radar Terminal v11.0 • Ultimate Vision • 2025")
