@@ -5,7 +5,7 @@ import io
 
 # 1. CONFIGURACIÓN DE PÁGINA
 st.set_page_config(
-    page_title="Radar Subvenciones AI v12.5",
+    page_title="Radar Subvenciones AI v13.0",
     page_icon="💎",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -28,7 +28,7 @@ def check_password():
 
 if check_password():
 
-    # --- DISEÑO CSS "INTEGRACIÓN TOTAL V2" ---
+    # --- DISEÑO CSS "BLUE GLOW & PERFECT ALIGN" ---
     st.markdown("""
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap');
@@ -36,50 +36,53 @@ if check_password():
         /* Forzar fondo oscuro */
         .stApp { background-color: #0d1117 !important; }
         
-        /* Estilo de la burbuja (Contenedor nativo de Streamlit hackeado) */
+        /* Estilo de la BURBUJA con EFECTO AZUL al pasar por encima */
         div[data-testid="stVerticalBlockBorderWrapper"] {
             background-color: #161b22 !important;
             border-radius: 30px !important;
             border: 1px solid rgba(255,255,255,0.08) !important;
             padding: 0px !important;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.4) !important;
-            transition: all 0.3s ease !important;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
             margin-bottom: 25px !important;
             overflow: hidden !important;
         }
         
+        /* EL EFECTO QUE QUERÍAS: Brillo azul y escala */
         div[data-testid="stVerticalBlockBorderWrapper"]:hover {
             border-color: #58a6ff !important;
-            transform: translateY(-5px) !important;
+            transform: translateY(-5px) scale(1.01) !important;
+            box-shadow: 0 0 25px rgba(88, 166, 255, 0.4) !important;
         }
 
-        /* Foto del sector ajustada al techo */
+        /* Foto del sector ajustada al techo sin bordes internos */
         .header-img {
             width: 100%;
-            height: 220px;
+            height: 240px;
             object-fit: cover;
             border-radius: 30px 30px 0 0;
             display: block;
+            margin: 0 !important;
         }
 
-        /* Contenido con padding */
+        /* Contenido con padding uniforme */
         .content-padding {
-            padding: 20px 25px 25px 25px;
+            padding: 25px;
         }
 
         .sub-title {
             color: #ffffff !important;
-            font-size: 22px !important;
+            font-size: 24px !important;
             font-weight: 800 !important;
             line-height: 1.2;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
         }
 
         .tag-container {
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
 
         .tag {
@@ -91,14 +94,30 @@ if check_password():
             text-transform: uppercase;
         }
 
-        /* Etiquetas de datos abajo */
-        .data-label { color: #8b949e !important; font-size: 11px; font-weight: 700; margin-bottom: 0px; text-transform: uppercase; letter-spacing: 0.5px;}
-        .data-value { color: #58a6ff !important; font-size: 18px !important; font-weight: 800; margin-top: -5px;}
+        /* Datos de Cuantía y Plazo alineados */
+        .data-container {
+            text-align: center;
+            padding: 10px;
+        }
+        .data-label { 
+            color: #8b949e !important; 
+            font-size: 11px; 
+            font-weight: 700; 
+            margin-bottom: 2px; 
+            text-transform: uppercase; 
+            letter-spacing: 1px;
+        }
+        .data-value { 
+            color: #58a6ff !important; 
+            font-size: 19px !important; 
+            font-weight: 800; 
+            margin: 0;
+        }
 
         .badge-prob {
-            padding: 4px 10px;
+            padding: 5px 12px;
             border-radius: 8px;
-            font-size: 10px;
+            font-size: 11px;
             font-weight: 900;
             text-transform: uppercase;
             float: right;
@@ -109,10 +128,10 @@ if check_password():
         .stExpander {
             background-color: rgba(255,255,255,0.03) !important;
             border: 1px solid rgba(255,255,255,0.1) !important;
-            border-radius: 15px !important;
-            margin-bottom: 15px !important;
+            border-radius: 20px !important;
+            margin-bottom: 20px !important;
         }
-        
+
         #MainMenu {visibility: hidden;}
         footer {visibility: hidden;}
         </style>
@@ -139,28 +158,28 @@ if check_password():
         if "estatal" in t: return "#8957e5" 
         return "#444c56"
 
-    # 4. IMÁGENES PREMIUM REVISADAS
+    # 4. IMÁGENES PREMIUM (Corregidas para que no fallen)
     def get_sector_image(sector, titulo):
         combined = (str(sector) + " " + str(titulo)).lower()
-        # IDs de fotos de alta calidad que cargan siempre
-        img_id = '1451187580459-43490279c0fa' # Default Tech
+        # Lista de IDs ultra-fiables de Unsplash
+        img_id = '1451187580459-43490279c0fa' # Tech por defecto
         
-        if 'dana' in combined or 'social' in combined or 'tercer sector' in combined: 
-            img_id = '1593113501539-d91f43f130ac' # Ayuda humanitaria / Comunidad
+        if any(x in combined for x in ['dana', 'social', 'tercer sector', 'ayuda']): 
+            img_id = '1488521787991-ed7bbaae773c' 
         elif any(x in combined for x in ['univ', 'docen', 'lector', 'curso', 'beca']): 
-            img_id = '1541339905120-f579ae5af072' # Universidad / Libros
+            img_id = '1523240715630-341b21391307' 
         elif any(x in combined for x in ['energ', 'foto', 'placa', 'solar']): 
-            img_id = '1509391366360-2e959784a276' # Solar
+            img_id = '1509391366360-2e959784a276' 
         elif any(x in combined for x in ['eolic', 'viento', 'hidro']): 
-            img_id = '1466611653911-954ff21b6724' # Viento / Energía
-        elif any(x in combined for x in ['indust', 'manufact', 'fábrica', 'tecnol']): 
-            img_id = '1581091226825-a6a2a5aee158' # Industrial
+            img_id = '1466611653911-954ff21b6724' 
+        elif any(x in combined for x in ['indust', 'manufact', 'fábrica']): 
+            img_id = '1581091226825-a6a2a5aee158' 
         elif any(x in combined for x in ['digital', 'tic', 'software', 'ia']): 
-            img_id = '1518770660439-4636190af475' # Digital
-        elif any(x in combined for x in ['transp', 'moves', 'coche', 'electri']): 
-            img_id = '1506521781263-d8422e82f27a' # Eléctrico
+            img_id = '1518770660439-4636190af475' 
+        elif any(x in combined for x in ['transp', 'moves', 'coche']): 
+            img_id = '1506521781263-d8422e82f27a' 
         
-        return f"https://images.unsplash.com/photo-{img_id}?q=80&w=1000&auto=format&fit=crop"
+        return f"https://images.unsplash.com/photo-{img_id}?q=80&w=800&auto=format&fit=crop"
 
     df = load_data()
 
@@ -182,24 +201,24 @@ if check_password():
             
             with cols_grid[i % 2]:
                 with st.container(border=True):
-                    # 1. Foto al techo (Sin espacios)
+                    # 1. Foto (Sin huecos arriba)
                     st.markdown(f'<img src="{get_sector_image(fila.iloc[5], fila.iloc[1])}" class="header-img">', unsafe_allow_html=True)
                     
-                    # 2. Contenido
+                    # 2. Contenido interno
                     st.markdown('<div class="content-padding">', unsafe_allow_html=True)
                     
-                    # Probabilidad y Título
+                    # Cabecera: Probabilidad y Título
                     prob = str(fila.iloc[9]).strip()
                     p_class = "prob-alta" if "Alta" in prob else "prob-media"
                     st.markdown(f'<span class="badge-prob {p_class}">● {prob}</span>', unsafe_allow_html=True)
                     st.markdown(f'<div class="sub-title">{fila.iloc[1]}</div>', unsafe_allow_html=True)
                     
-                    # Tags
+                    # Etiquetas
                     tags = str(fila.iloc[2]).split('|')
                     tags_html = "".join([f'<span class="tag" style="background:{get_tag_color(t.strip())};">{t.strip()}</span>' for t in tags])
                     st.markdown(f'<div class="tag-container">{tags_html}</div>', unsafe_allow_html=True)
                     
-                    # Expander de Análisis
+                    # Expander
                     with st.expander("🚀 ANALIZAR OPORTUNIDAD"):
                         t1, t2 = st.tabs(["ESTRATEGIA", "REQUISITOS"])
                         with t1:
@@ -209,15 +228,25 @@ if check_password():
                             st.write(fila.iloc[8])
                         st.link_button("🔗 VER EXPEDIENTE BOE", str(fila.iloc[0]), use_container_width=True)
 
-                    # --- CAMBIO DE LAYOUT: Cuantía y Plazo en paralelo abajo ---
-                    col_a, col_b = st.columns(2)
-                    with col_a:
-                        st.markdown('<p class="data-label">💰 CUANTÍA ESTIMADA</p>', unsafe_allow_html=True)
-                        st.markdown(f'<p class="data-value">{fila.iloc[3]}</p>', unsafe_allow_html=True)
-                    with col_b:
-                        st.markdown('<p class="data-label">⏳ PLAZO LÍMITE</p>', unsafe_allow_html=True)
-                        st.markdown(f'<p class="data-value">{fila.iloc[4]}</p>', unsafe_allow_html=True)
+                    # --- DATOS ABAJO: Centrados y en paralelo ---
+                    st.markdown('<div style="margin-top: 20px;">', unsafe_allow_html=True)
+                    c_a, c_b = st.columns(2)
+                    with c_a:
+                        st.markdown(f'''
+                            <div class="data-container">
+                                <p class="data-label">💰 Cuantía Estimada</p>
+                                <p class="data-value">{fila.iloc[3]}</p>
+                            </div>
+                        ''', unsafe_allow_html=True)
+                    with c_b:
+                        st.markdown(f'''
+                            <div class="data-container">
+                                <p class="data-label">⏳ Plazo Límite</p>
+                                <p class="data-value">{fila.iloc[4]}</p>
+                            </div>
+                        ''', unsafe_allow_html=True)
+                    st.markdown('</div>', unsafe_allow_html=True)
                     
                     st.markdown('</div>', unsafe_allow_html=True) # Cierre content-padding
 
-    st.caption("Terminal Radar v12.5 • Bunker Edition • 2025")
+    st.caption("Terminal Radar v13.0 • Blue Glow Edition • 2025")
