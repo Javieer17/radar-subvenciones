@@ -239,4 +239,30 @@ if check_password():
                     
                     # Expander
                     with st.expander("🚀 VER DETALLES Y ESTRATEGIA"):
-                        st.markdown("**Resumen E
+                        st.markdown("**Resumen Ejecutivo:**")
+                        st.write(fila.iloc[6])
+                        st.info(f"**Justificación:** {fila.iloc[7]}")
+                        st.write(fila.iloc[8])
+                        st.link_button("🔗 VER BOE OFICIAL", str(fila.iloc[0]), use_container_width=True)
+                    
+                    # Datos
+                    st.write("")
+                    c_1, c_2 = st.columns(2)
+                    with c_1:
+                        st.markdown(f'''
+                            <div class="info-pill">
+                                <p class="info-label">💰 Cuantía</p>
+                                <p class="info-value">{fila.iloc[3]}</p>
+                            </div>
+                        ''', unsafe_allow_html=True)
+                    with c_2:
+                        st.markdown(f'''
+                            <div class="info-pill">
+                                <p class="info-label">⏳ Plazo</p>
+                                <p class="info-value">{fila.iloc[4]}</p>
+                            </div>
+                        ''', unsafe_allow_html=True)
+                    
+                    st.markdown('</div>', unsafe_allow_html=True)
+
+    st.caption("Radar v20.0 • Text Fix Edition • 2025")
