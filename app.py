@@ -4,96 +4,96 @@ import requests
 import io
 import re
 
-# 1. CONFIGURACIÓN DE PÁGINA
+# 1. CONFIGURACIÓN
 st.set_page_config(page_title="Radar Subvenciones", layout="wide", page_icon="🚀")
 
-# 2. FUNCIÓN PARA LIMPIAR Y CARGAR DATOS
-@st.cache_data(ttl=300)
-def load_data_from_google():
-    # ID de tu Excel (limpiado de cualquier carácter raro)
+@st.cache_data(ttl=60)
+def load_data_pro():
     sheet_id = "1XpsEMDFuvV-0fYM51ajDTdtZz21MGFp7t-M-bkrNpRk"
-    # Construimos la URL de exportación a CSV
-    raw_url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv"
-    
-    # LIMPIEZA EXTREMA: Borramos cualquier carácter invisible o de control
-    # Solo permitimos letras, números y símbolos de URL estándar
-    clean_url = re.sub(r'[^a-zA-Z0-9:/._?=&-]', '', raw_url)
+    # Usamos la exportación directa que es la más estable
+    url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv"
     
     try:
-        # Descargamos el contenido usando requests (más estable)
-        response = requests.get(clean_url, timeout=10)
-        response.raise_for_status() # Lanza error si no puede entrar
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
         
-        # Convertimos el texto descargado en un DataFrame de Pandas
-        csv_data = io.StringIO(response.text)
-        df = pd.read_csv(csv_data)
+        # Leemos el CSV
+        df = pd.read_csv(io.StringIO(response.text))
         
-        # Limpiar nombres de columnas
+        # LIMPIEZA DE COLUMNAS: Quitamos espacios y ponemos todo en minúsculas para buscar mejor
         df.columns = [str(c).strip() for c in df.columns]
-        # Quitar filas sin título
-        df = df.dropna(subset=['Título'])
         return df
     except Exception as e:
-        return f"Error de conexión: {str(e)}"
+        return f"Error técnico: {str(e)}"
 
-# Ejecutar la carga
-df = load_data_from_google()
+# Cargar datos
+df = load_data_pro()
 
-# --- INTERFAZ ---
 st.title("🚀 Radar de Subvenciones Inteligente")
-st.markdown("Oportunidades analizadas por IA directamente del BOE.")
 st.divider()
 
 if isinstance(df, str):
-    st.error("⚠️ No se ha podido conectar con el Excel")
-    st.write(f"Detalle técnico: {df}")
-    st.info("Revisa: 1. Que el Excel sea público (Cualquier persona con el enlace > Lector). 2. Que no hayas cambiado el nombre de las columnas.")
+    st.error(f"No se pudo cargar el Excel: {df}")
 else:
-    # --- FILTROS EN BARRA LATERAL ---
-    st.sidebar.header("Filtros")
-    
-    # Sector
-    col_sector = 'Sector' if 'Sector' in df.columns else df.columns[5]
-    lista_sectores = sorted(df[col_sector].unique().tolist())
-    sec_sel = st.sidebar.multiselect("Filtrar por Sector", lista_sectores, default=lista_sectores)
+    # --- BUSCADOR INTELIGENTE DE COLUMNAS ---
+    # Buscamos la columna que se parezca a "Título"
+    col_titulo = next((c for c in df.columns if 'tit' in c.lower()), None)
+    col_sector = next((c for c in df.columns if 'sect' in c.lower()), None)
+    col_prob = next((c for c in df.columns if 'prob' in c.lower()), None)
 
-    # Probabilidad
-    col_prob = 'Probabilidad' if 'Probabilidad' in df.columns else df.columns[-1]
-    lista_probs = df[col_prob].unique().tolist()
-    prob_sel = st.sidebar.multiselect("Probabilidad", lista_probs, default=lista_probs)
+    # Si no encontramos la columna Título, mostramos diagnóstico
+    if not col_titulo:
+        st.warning("⚠️ No encuentro la columna 'Título' en tu Excel.")
+        st.write("Las columnas que he detectado son estas:", list(df.columns))
+        st.info("Asegúrate de que la primera fila de tu Excel tenga los nombres de las columnas.")
+    else:
+        # --- FILTROS ---
+        st.sidebar.header("Filtros")
+        
+        # Filtro Sector
+        if col_sector:
+            opciones_sector = sorted(df[col_sector].dropna().unique().tolist())
+            sel_sector = st.sidebar.multiselect("Sector", opciones_sector, default=opciones_sector)
+            df = df[df[col_sector].isin(sel_sector)]
+        
+        # Filtro Probabilidad
+        if col_prob:
+            opciones_prob = sorted(df[col_prob].dropna().unique().tolist())
+            sel_prob = st.sidebar.multiselect("Probabilidad", opciones_prob, default=opciones_prob)
+            df = df[df[col_prob].isin(sel_prob)]
 
-    # Filtrado
-    df_final = df[df[col_sector].isin(sec_sel) & df[col_prob].isin(prob_sel)]
+        # --- LISTADO ---
+        st.subheader(f"🔍 {len(df)} subvenciones encontradas")
 
-    st.subheader(f"🔍 {len(df_final)} subvenciones detectadas")
-
-    # --- LISTADO DE TARJETAS ---
-    for _, row in df_final.iterrows():
-        with st.container(border=True):
-            c1, c2 = st.columns([4, 1])
-            with c1:
-                st.subheader(row['Título'])
-                st.write(f"**💰 Cuantía:** {row.get('Cuantía', 'Ver BOE')} | **📅 Plazo:** {row.get('Plazo', 'Ver BOE')}")
-            with c2:
-                p = str(row.get('Probabilidad', 'Media'))
-                color = "green" if "Alta" in p else "orange" if "Media" in p else "gray"
-                st.markdown(f"### :{color}[{p}]")
-            
-            with st.expander("Ver detalles y requisitos"):
-                ca, cb = st.columns(2)
-                with ca:
-                    st.write("**Resumen:**")
-                    st.write(row.get('Resumen', 'Consultar enlace'))
-                    st.write("**Oportunidad:**")
-                    st.write(row.get('Justificación', 'Consultar enlace'))
-                with cb:
-                    st.write("**Requisitos:**")
-                    st.write(row.get('Requisitos Detallados', 'Consultar enlace'))
+        for _, row in df.iterrows():
+            with st.container(border=True):
+                c1, c2 = st.columns([4, 1])
+                with c1:
+                    st.subheader(row[col_titulo])
+                    # Intentamos sacar cuantía y plazo si existen
+                    cuantia = next((row[c] for c in df.columns if 'cuan' in c.lower()), "Ver BOE")
+                    plazo = next((row[c] for c in df.columns if 'plaz' in c.lower()), "Ver BOE")
+                    st.write(f"**💰 Cuantía:** {cuantia} | **📅 Plazo:** {plazo}")
                 
-                st.divider()
-                # El enlace al BOE
-                url_final = str(row.get('ID', '#'))
-                st.link_button("🔗 Abrir enlace del BOE", url_final)
+                with c2:
+                    if col_prob:
+                        p = str(row[col_prob])
+                        color = "green" if "alta" in p.lower() else "orange" if "med" in p.lower() else "gray"
+                        st.markdown(f"### :{color}[{p}]")
 
-st.divider()
-st.caption("Automatizado con n8n, Groq y Streamlit")
+                with st.expander("Ver análisis de la IA"):
+                    # Buscamos resumen y justificacion por aproximación
+                    resumen = next((row[c] for c in df.columns if 'resum' in c.lower()), "No disponible")
+                    justif = next((row[c] for c in df.columns if 'just' in c.lower()), "No disponible")
+                    req = next((row[c] for c in df.columns if 'requi' in c.lower()), "No disponible")
+                    
+                    st.write("**Resumen:**", resumen)
+                    st.write("**Oportunidad:**", justif)
+                    st.write("**Requisitos:**", req)
+                    
+                    st.divider()
+                    # Buscamos la URL (columna ID)
+                    url_link = row.get('ID', row.get('url_final', '#'))
+                    st.link_button("🔗 Abrir en el BOE", str(url_link))
+
+st.caption("Actualizado con n8n y Groq AI")
