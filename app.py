@@ -36,6 +36,7 @@ st.markdown("""
         --hover-transform: -5px;
         --input-bg: #ffffff;
         --filter-img: brightness(1);    /* Foto normal */
+        --metric-val: #2563eb;
     }
 
     /* DETECCIÓN AUTOMÁTICA DE MODO OSCURO (TITAN MODE) */
@@ -54,6 +55,7 @@ st.markdown("""
             --hover-transform: -8px;
             --input-bg: #111111;
             --filter-img: brightness(0.85); /* Un poco oscura para resaltar textos */
+            --metric-val: #00f2ff;
         }
     }
 
@@ -176,6 +178,10 @@ st.markdown("""
     .streamlit-expanderContent p { color: var(--text-body) !important; }
     h1, h2, h3 { color: var(--text-title) !important; }
     
+    /* Métrica Custom */
+    [data-testid="stMetricValue"] { color: var(--metric-val) !important; font-family: 'Rajdhani', sans-serif; }
+    [data-testid="stMetricLabel"] { color: var(--text-body) !important; }
+
     #MainMenu {visibility: hidden;} footer {visibility: hidden;}
     </style>
 """, unsafe_allow_html=True)
@@ -212,7 +218,7 @@ def load_data():
         return df
     except: return None
 
-# Helper para color de tags (Funciona en ambos modos pq el texto es blanco)
+# Helper para color de tags
 def get_tag_bg(tag):
     t = tag.lower()
     if "next" in t: return "#2563eb" # Azul Real
@@ -241,7 +247,7 @@ if check_password():
     c_head, c_search = st.columns([1, 1])
     with c_head:
         # El color del título cambia con CSS var(--text-title)
-        st.markdown("<h1 style='margin:0; font-size:32px;'>💠 RADAR <span style='color:var(--accent-color)'>TITAN</span></h1>", unsafe_allow_html=True)
+        st.markdown("<h1 style='margin:0; font-size:32px;'>📡 RADAR <span style='color:var(--accent-color)'>TITAN</span></h1>", unsafe_allow_html=True)
     with c_search:
         st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
         query = st.text_input("", placeholder="🔍 Buscar oportunidad...", label_visibility="collapsed")
@@ -250,48 +256,60 @@ if check_password():
     df = load_data()
 
     if df is not None:
+        # 1. FILTRADO
         if query: df = df[df.apply(lambda r: r.astype(str).str.contains(query, case=False).any(), axis=1)]
 
-        cols = st.columns(2)
-        for i, row in df.iterrows():
-            if pd.isna(row.iloc[1]): continue
-            
-            titulo = row.iloc[1]
-            tags_html = "".join([f"<span class='smart-tag' style='background:{get_tag_bg(t.strip())}'>{t.strip()}</span>" for t in str(row.iloc[2]).split('|')])
-            img_url = get_img_url(row.iloc[5], titulo)
-            prob = str(row.iloc[9]).strip()
-            
-            # HTML CARD (Usa variables CSS)
-            html_card = f"""
-            <div class="smart-card">
-                <div class="card-badge">● {prob.upper()}</div>
-                <img src="{img_url}" class="card-img">
-                <div class="card-body">
-                    <div class="card-title">{titulo}</div>
-                    <div class="tag-container">{tags_html}</div>
-                    <div class="data-grid">
-                        <div class="data-item">
-                            <div class="data-label">Cuantía</div>
-                            <div class="data-value">{row.iloc[3]}</div>
-                        </div>
-                        <div class="data-item">
-                            <div class="data-label">Plazo</div>
-                            <div class="data-value">{row.iloc[4]}</div>
+        # 2. MÉTRICAS (LA GUINDA DEL PASTEL)
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Resultados", len(df))
+        c2.metric("Alta Probabilidad", len(df[df.iloc[:, 9].astype(str).str.contains("Alta", case=False)]) if len(df)>0 else 0)
+        c3.metric("Filtro Activo", "Sí" if query else "No")
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # 3. CONTROL DE "SIN RESULTADOS"
+        if len(df) == 0:
+            st.warning("⚠️ No se encontraron subvenciones con ese criterio. Intenta otra búsqueda.")
+        else:
+            # 4. RENDERIZADO DE TARJETAS
+            cols = st.columns(2)
+            for i, row in df.iterrows():
+                if pd.isna(row.iloc[1]): continue
+                
+                titulo = row.iloc[1]
+                tags_html = "".join([f"<span class='smart-tag' style='background:{get_tag_bg(t.strip())}'>{t.strip()}</span>" for t in str(row.iloc[2]).split('|')])
+                img_url = get_img_url(row.iloc[5], titulo)
+                prob = str(row.iloc[9]).strip()
+                
+                # HTML CARD (Usa variables CSS)
+                html_card = f"""
+                <div class="smart-card">
+                    <div class="card-badge">● {prob.upper()}</div>
+                    <img src="{img_url}" class="card-img">
+                    <div class="card-body">
+                        <div class="card-title">{titulo}</div>
+                        <div class="tag-container">{tags_html}</div>
+                        <div class="data-grid">
+                            <div class="data-item">
+                                <div class="data-label">Cuantía</div>
+                                <div class="data-value">{row.iloc[3]}</div>
+                            </div>
+                            <div class="data-item">
+                                <div class="data-label">Plazo</div>
+                                <div class="data-value">{row.iloc[4]}</div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            """
-            
-            with cols[i % 2]:
-                st.markdown(html_card, unsafe_allow_html=True)
-                with st.expander("🔻 ESTRATEGIA Y DETALLES"):
-                    st.markdown("#### 🧠 Análisis IA")
-                    st.write(row.iloc[6])
-                    st.markdown("#### 📜 Requisitos")
-                    st.write(row.iloc[8])
-                    st.markdown("<br>", unsafe_allow_html=True)
-                    st.link_button("🔗 ACCEDER AL BOE", str(row.iloc[0]), use_container_width=True)
-                st.write("") 
+                """
+                
+                with cols[i % 2]:
+                    st.markdown(html_card, unsafe_allow_html=True)
+                    with st.expander("🔻 ESTRATEGIA Y DETALLES"):
+                        st.markdown("#### 🧠 Análisis IA")
+                        st.write(row.iloc[6])
+                        st.markdown("#### 📜 Requisitos")
+                        st.write(row.iloc[8])
+                        st.markdown("<br>", unsafe_allow_html=True)
+                        st.link_button("🔗 ACCEDER AL BOE", str(row.iloc[0]), use_container_width=True)
+                    st.write("") 
     else: st.error("DATABASE ERROR")
-
