@@ -7,65 +7,59 @@ import io
 # 1. CONFIGURACIÓN DEL MOTOR
 # ==============================================================================
 st.set_page_config(
-    page_title="Radar Subvenciones | TITAN",
+    page_title="Radar Subvenciones | TITAN FILTER",
     page_icon="💠",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
 
 # ==============================================================================
-# 2. CSS DINÁMICO (LA MAGIA DEL CAMBIO AUTOMÁTICO)
+# 2. CSS DINÁMICO (CHAMELEON + BOLD)
 # ==============================================================================
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=Inter:wght@400;600;800&display=swap');
+    /* IMPORTAMOS FUENTES MÁS GRUESAS (800, 900) */
+    @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700;800&family=Inter:wght@500;700;900&display=swap');
 
-    /* --- DEFINICIÓN DE VARIABLES (EL CEREBRO DEL TEMA) --- */
     :root {
-        /* VALORES POR DEFECTO (MODO CLARO - CLEAN PRO) */
-        --bg-app: #f3f4f6;              /* Gris muy suave */
-        --card-bg: #ffffff;             /* Blanco puro */
-        --card-border: #e5e7eb;         /* Borde gris sutil */
-        --text-title: #111827;          /* Casi negro */
-        --text-body: #4b5563;           /* Gris oscuro */
-        --accent-color: #2563eb;        /* AZUL ROYAL */
+        /* MODO CLARO (CLEAN PRO) */
+        --bg-app: #f3f4f6;
+        --card-bg: #ffffff;
+        --card-border: #e5e7eb;
+        --text-title: #111827;
+        --text-body: #374151;
+        --accent-color: #2563eb;
         --shadow-color: rgba(0,0,0,0.05);
-        --shadow-hover: rgba(37, 99, 235, 0.15); /* Sombra azulada */
+        --shadow-hover: rgba(37, 99, 235, 0.15);
         --badge-bg: #dbeafe;
         --badge-text: #1e40af;
         --hover-transform: -5px;
         --input-bg: #ffffff;
-        --filter-img: brightness(1);    /* Foto normal */
+        --filter-img: brightness(1);
         --metric-val: #2563eb;
     }
 
-    /* DETECCIÓN AUTOMÁTICA DE MODO OSCURO (TITAN MODE) */
+    /* MODO OSCURO (TITAN MODE) */
     @media (prefers-color-scheme: dark) {
         :root {
-            --bg-app: #050505;          /* Negro Titan */
-            --card-bg: #111111;         /* Gris Carbón */
-            --card-border: #333333;     /* Borde oscuro */
-            --text-title: #ffffff;      /* Blanco */
-            --text-body: #9ca3af;       /* Gris plata */
-            --accent-color: #00f2ff;    /* CIAN NEÓN */
+            --bg-app: #050505;
+            --card-bg: #111111;
+            --card-border: #333333;
+            --text-title: #ffffff;
+            --text-body: #9ca3af;
+            --accent-color: #00f2ff;
             --shadow-color: rgba(0,0,0,0.8);
-            --shadow-hover: rgba(0, 242, 255, 0.2); /* Resplandor Cian */
+            --shadow-hover: rgba(0, 242, 255, 0.2);
             --badge-bg: rgba(0, 242, 255, 0.1);
             --badge-text: #00f2ff;
             --hover-transform: -8px;
             --input-bg: #111111;
-            --filter-img: brightness(0.85); /* Un poco oscura para resaltar textos */
+            --filter-img: brightness(0.85);
             --metric-val: #00f2ff;
         }
     }
 
-    /* --- APLICACIÓN DE VARIABLES --- */
-    
-    .stApp {
-        background-color: var(--bg-app) !important;
-        color: var(--text-title) !important;
-    }
-    
+    .stApp { background-color: var(--bg-app) !important; color: var(--text-title) !important; }
     .block-container { padding-top: 2rem !important; }
 
     /* TARJETA DINÁMICA */
@@ -77,9 +71,7 @@ st.markdown("""
         position: relative;
         transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
         box-shadow: 0 4px 6px -1px var(--shadow-color);
-        margin-bottom: 0px;
     }
-
     .smart-card:hover {
         transform: translateY(var(--hover-transform));
         border-color: var(--accent-color);
@@ -96,17 +88,17 @@ st.markdown("""
         filter: var(--filter-img);
         transition: 0.3s;
     }
-    .smart-card:hover .card-img { filter: brightness(1.05); }
+    .smart-card:hover .card-img { filter: brightness(1.1); }
 
     /* CUERPO */
     .card-body { padding: 20px; }
 
-    /* TEXTOS */
+    /* TEXTOS (AHORA EN NEGRITA EXTREMA) */
     .card-title {
         font-family: 'Inter', sans-serif;
-        font-weight: 800;
-        font-size: 18px;
-        line-height: 1.4;
+        font-weight: 900 !important; /* NEGRITA MÁXIMA */
+        font-size: 19px;
+        line-height: 1.3;
         color: var(--text-title);
         margin-bottom: 15px;
         min-height: 50px;
@@ -114,73 +106,54 @@ st.markdown("""
 
     /* BADGE */
     .card-badge {
-        position: absolute;
-        top: 15px; 
-        right: 15px;
-        background: var(--badge-bg);
-        color: var(--badge-text);
+        position: absolute; top: 15px; right: 15px;
+        background: var(--badge-bg); color: var(--badge-text);
         border: 1px solid var(--badge-text);
-        padding: 4px 10px;
-        border-radius: 20px;
-        font-size: 11px;
-        font-weight: 800;
+        padding: 5px 12px; border-radius: 20px;
+        font-size: 11px; font-weight: 800;
         backdrop-filter: blur(4px);
     }
 
-    /* GRID DE DATOS */
+    /* DATA GRID */
     .data-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 10px;
-        border-top: 1px solid var(--card-border);
-        padding-top: 15px;
-        margin-top: 15px;
+        display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+        border-top: 1px solid var(--card-border); padding-top: 15px; margin-top: 15px;
     }
     .data-item { text-align: center; }
     .data-label {
-        font-size: 10px; 
-        color: var(--text-body);
-        font-weight: 700; 
-        text-transform: uppercase;
+        font-size: 10px; color: var(--text-body);
+        font-weight: 800; text-transform: uppercase; letter-spacing: 1px;
     }
     .data-value {
         font-family: 'Rajdhani', sans-serif;
-        font-size: 18px; 
-        font-weight: 700;
+        font-size: 19px; font-weight: 800; /* NEGRITA */
         color: var(--accent-color);
     }
 
     /* TAGS */
-    .tag-container { display: flex; flex-wrap: wrap; gap: 5px; }
+    .tag-container { display: flex; flex-wrap: wrap; gap: 6px; }
     .smart-tag {
-        font-size: 10px;
-        font-weight: 700;
-        padding: 3px 8px;
-        border-radius: 6px;
-        color: white; /* Los tags siempre blancos pq llevan fondo de color */
-        text-transform: uppercase;
+        font-size: 10px; font-weight: 800; padding: 4px 10px;
+        border-radius: 6px; color: white; text-transform: uppercase;
     }
 
-    /* COMPONENTES NATIVOS ADAPTADOS */
-    .stTextInput input {
+    /* INPUTS & FILTROS */
+    .stTextInput input, .stMultiSelect div {
         background-color: var(--input-bg) !important;
-        border: 1px solid var(--card-border) !important;
+        border-color: var(--card-border) !important;
         color: var(--text-title) !important;
     }
-    .stTextInput input:focus { border-color: var(--accent-color) !important; }
     
     .stExpander {
         background-color: var(--card-bg) !important;
         border: 1px solid var(--card-border) !important;
-        border-top: none !important;
-        border-radius: 0 0 16px 16px !important;
+        border-radius: 12px !important;
+        margin-bottom: 20px !important;
     }
     .streamlit-expanderContent p { color: var(--text-body) !important; }
     h1, h2, h3 { color: var(--text-title) !important; }
-    
-    /* Métrica Custom */
-    [data-testid="stMetricValue"] { color: var(--metric-val) !important; font-family: 'Rajdhani', sans-serif; }
-    [data-testid="stMetricLabel"] { color: var(--text-body) !important; }
+    [data-testid="stMetricValue"] { color: var(--metric-val) !important; font-family: 'Rajdhani', sans-serif; font-weight: 800; }
+    [data-testid="stMetricLabel"] { color: var(--text-body) !important; font-weight: 700; }
 
     #MainMenu {visibility: hidden;} footer {visibility: hidden;}
     </style>
@@ -205,7 +178,7 @@ def check_password():
     return True
 
 # ==============================================================================
-# 4. LÓGICA & IMÁGENES
+# 4. LÓGICA Y DATOS
 # ==============================================================================
 @st.cache_data(ttl=60)
 def load_data():
@@ -218,17 +191,15 @@ def load_data():
         return df
     except: return None
 
-# Helper para color de tags
 def get_tag_bg(tag):
     t = tag.lower()
-    if "next" in t: return "#2563eb" # Azul Real
-    if "subvenc" in t: return "#16a34a" # Verde
-    if "préstamo" in t: return "#dc2626" # Rojo
-    return "#4b5563" # Gris oscuro
+    if "next" in t: return "#2563eb"
+    if "subvenc" in t: return "#16a34a"
+    if "prestamo" in t: return "#dc2626"
+    return "#4b5563"
 
 def get_img_url(sector, titulo):
     combined = (str(sector) + " " + str(titulo)).lower()
-    # Enlaces de Unsplash optimizados y temáticos
     if any(x in combined for x in ['dana', 'social', 'ayuda']): return "https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&w=800&q=80"
     elif any(x in combined for x in ['solar', 'energ']): return "https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&w=800&q=80"
     elif any(x in combined for x in ['eolic', 'viento']): return "https://images.unsplash.com/photo-1466611653911-954ff21b6724?auto=format&fit=crop&w=800&q=80"
@@ -246,31 +217,51 @@ if check_password():
     
     c_head, c_search = st.columns([1, 1])
     with c_head:
-        # El color del título cambia con CSS var(--text-title)
         st.markdown("<h1 style='margin:0; font-size:32px;'>📡 RADAR <span style='color:var(--accent-color)'>TITAN</span></h1>", unsafe_allow_html=True)
     with c_search:
         st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
         query = st.text_input("", placeholder="🔍 Buscar oportunidad...", label_visibility="collapsed")
 
-    st.markdown("---")
     df = load_data()
 
     if df is not None:
-        # 1. FILTRADO
-        if query: df = df[df.apply(lambda r: r.astype(str).str.contains(query, case=False).any(), axis=1)]
+        
+        # --- NUEVO: SISTEMA DE FILTRADO AVANZADO ---
+        with st.expander("⚙️ FILTROS AVANZADOS (SECTOR / PROBABILIDAD)", expanded=False):
+            fc1, fc2 = st.columns(2)
+            
+            # Obtener valores únicos para los desplegables
+            sectores_unicos = sorted(df.iloc[:, 5].astype(str).unique())
+            probs_unicas = sorted(df.iloc[:, 9].astype(str).unique())
+            
+            with fc1:
+                filtro_sector = st.multiselect("Filtrar por Sector:", sectores_unicos)
+            with fc2:
+                filtro_prob = st.multiselect("Filtrar por Probabilidad:", probs_unicas)
 
-        # 2. MÉTRICAS (LA GUINDA DEL PASTEL)
+        st.markdown("---")
+
+        # --- LÓGICA DE FILTRADO ---
+        # 1. Filtro Texto
+        if query: 
+            df = df[df.apply(lambda r: r.astype(str).str.contains(query, case=False).any(), axis=1)]
+        # 2. Filtro Sector
+        if filtro_sector:
+            df = df[df.iloc[:, 5].astype(str).isin(filtro_sector)]
+        # 3. Filtro Probabilidad
+        if filtro_prob:
+            df = df[df.iloc[:, 9].astype(str).isin(filtro_prob)]
+
+        # --- MÉTRICAS ---
         c1, c2, c3 = st.columns(3)
         c1.metric("Resultados", len(df))
         c2.metric("Alta Probabilidad", len(df[df.iloc[:, 9].astype(str).str.contains("Alta", case=False)]) if len(df)>0 else 0)
-        c3.metric("Filtro Activo", "Sí" if query else "No")
+        c3.metric("Filtros Activos", "Sí" if (query or filtro_sector or filtro_prob) else "No")
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # 3. CONTROL DE "SIN RESULTADOS"
         if len(df) == 0:
-            st.warning("⚠️ No se encontraron subvenciones con ese criterio. Intenta otra búsqueda.")
+            st.warning("⚠️ No hay resultados. Ajusta los filtros.")
         else:
-            # 4. RENDERIZADO DE TARJETAS
             cols = st.columns(2)
             for i, row in df.iterrows():
                 if pd.isna(row.iloc[1]): continue
@@ -280,7 +271,6 @@ if check_password():
                 img_url = get_img_url(row.iloc[5], titulo)
                 prob = str(row.iloc[9]).strip()
                 
-                # HTML CARD (Usa variables CSS)
                 html_card = f"""
                 <div class="smart-card">
                     <div class="card-badge">● {prob.upper()}</div>
