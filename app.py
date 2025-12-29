@@ -354,17 +354,24 @@ if check_password():
             if total_ops > 0:
                 g1, g2 = st.columns(2)
                 with g1:
+                    # === CORRECCIÓN GRÁFICO 1: PIE CHART ===
                     sector_counts = filtered_df.iloc[:, 5].value_counts().reset_index()
                     sector_counts.columns = ['Sector', 'Count']
                     fig1 = px.pie(sector_counts, values='Count', names='Sector', hole=0.6, color_discrete_sequence=px.colors.sequential.Bluyl)
-                    # Eliminamos el color fijo "white" para que Streamlit controle el contraste
+                    
+                    # AQUÍ ESTÁ EL ARREGLO: Ocultamos leyenda (showlegend=False)
+                    # Y añadimos hover detallado para que se vea limpio.
                     fig1.update_layout(
                         title_text="Distribución por Sector", 
                         height=350,
                         margin=dict(l=20, r=20, t=40, b=20),
                         paper_bgcolor="rgba(0,0,0,0)", 
-                        plot_bgcolor="rgba(0,0,0,0)"
+                        plot_bgcolor="rgba(0,0,0,0)",
+                        showlegend=False  # <--- ESTO ELIMINA EL SOLAPAMIENTO
                     )
+                    # Mejoramos la información al pasar el ratón
+                    fig1.update_traces(hovertemplate='<b>%{label}</b><br>Cantidad: %{value}<br>(%{percent})')
+                    
                     st.plotly_chart(fig1, use_container_width=True)
                 with g2:
                     prob_counts = filtered_df.iloc[:, 9].value_counts().reset_index()
