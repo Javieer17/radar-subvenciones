@@ -2,4 +2,6 @@ streamlit
 pandas
 requests
 plotly
-fpdf2
+groq
+tavily-python
+fpdf
