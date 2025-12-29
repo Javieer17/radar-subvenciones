@@ -328,35 +328,41 @@ if check_password():
     
     if df is not None:
         
-        # ==================== SIDEBAR (FILTROS PRO) ====================
+        # ==================== SIDEBAR Y LÓGICA DE FILTRADO (AHORA JUNTOS) ====================
         with st.sidebar:
             st.markdown("### 🎛️ CENTRO DE MANDO")
             st.markdown("---")
             
-            # Buscador
+            # 1. Inputs de Filtro
             query = st.text_input("Búsqueda Textual", placeholder="Ej: Digitalización, Solar...", key="search_bar")
-            
-            # Filtros
             sectores_unicos = sorted(df.iloc[:, 5].astype(str).unique())
             probs_unicas = sorted(df.iloc[:, 9].astype(str).unique())
-            
             sel_sector = st.multiselect("Sector Estratégico", sectores_unicos)
             sel_prob = st.multiselect("Probabilidad de Éxito", probs_unicas)
             
+            # 2. Lógica de Filtrado (AQUÍ MISMO PARA QUE EL CSV SE ACTUALICE)
+            filtered_df = df.copy()
+            if query: 
+                filtered_df = filtered_df[filtered_df.apply(lambda r: r.astype(str).str.contains(query, case=False).any(), axis=1)]
+            if sel_sector:
+                filtered_df = filtered_df[filtered_df.iloc[:, 5].astype(str).isin(sel_sector)]
+            if sel_prob:
+                filtered_df = filtered_df[filtered_df.iloc[:, 9].astype(str).isin(sel_prob)]
+            
             st.markdown("---")
             
-            # Botón de Descarga (Simulación funcionalidad pro)
+            # 3. Botón de Descarga (AHORA USA filtered_df)
             st.markdown("### 📥 EXPORTAR")
-            csv = df.to_csv(index=False).encode('utf-8')
+            csv = filtered_df.to_csv(index=False).encode('utf-8')
             st.download_button(
-                "Descargar CSV Completo",
+                "Descargar CSV Filtrado",
                 data=csv,
-                file_name="titan_subvenciones.csv",
+                file_name="titan_subvenciones_filtradas.csv",
                 mime="text/csv",
                 use_container_width=True
             )
             
-            st.markdown("<div style='margin-top:50px; text-align:center; color:#475569; font-size:0.8rem;'>POWERED BY TITAN ENGINE v2.5</div>", unsafe_allow_html=True)
+            st.markdown("<div style='margin-top:50px; text-align:center; color:#475569; font-size:0.8rem;'>POWERED BY TITAN ENGINE v2.7</div>", unsafe_allow_html=True)
 
         # ==================== MAIN CONTENT ====================
         
@@ -366,26 +372,15 @@ if check_password():
             st.markdown("<div class='titan-header'>RADAR <span style='color:#3b82f6'>TITAN</span></div>", unsafe_allow_html=True)
             st.markdown("<p style='color:#94a3b8; font-size:1.1rem; margin-top:-10px;'>Inteligencia Artificial aplicada a la detección de fondos públicos.</p>", unsafe_allow_html=True)
         with c_hero2:
-             # Espacio para logo o status
              st.markdown("")
         
         st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
-
-        # --- LÓGICA DE FILTRADO ---
-        filtered_df = df.copy()
-        if query: 
-            filtered_df = filtered_df[filtered_df.apply(lambda r: r.astype(str).str.contains(query, case=False).any(), axis=1)]
-        if sel_sector:
-            filtered_df = filtered_df[filtered_df.iloc[:, 5].astype(str).isin(sel_sector)]
-        if sel_prob:
-            filtered_df = filtered_df[filtered_df.iloc[:, 9].astype(str).isin(sel_prob)]
 
         # --- KPIs HUD (HEADS-UP DISPLAY) ---
         kpi1, kpi2, kpi3, kpi4 = st.columns(4)
         
         total_ops = len(filtered_df)
         high_prob = len(filtered_df[filtered_df.iloc[:, 9].astype(str).str.contains("Alta", case=False)])
-        # Calculamos % de alta probabilidad
         ratio = round((high_prob / total_ops * 100), 1) if total_ops > 0 else 0
         
         kpi1.metric("OPORTUNIDADES", total_ops, delta="Activas")
@@ -393,35 +388,52 @@ if check_password():
         kpi3.metric("RATIO DE ÉXITO (IA)", f"{ratio}%")
         kpi4.metric("ACTUALIZACIÓN", "Hace 2 min")
 
-        # --- GRÁFICOS ANALYTICS (EXPANDER QUE SE VE BIEN) ---
+        # --- GRÁFICOS ANALYTICS (TAMAÑO MEJORADO) ---
         with st.expander("📊 ANALÍTICA DE MERCADO (CLIC PARA DESPLEGAR)", expanded=False):
             if total_ops > 0:
                 g1, g2 = st.columns(2)
                 with g1:
-                    # Gráfico de Sectores
+                    # Gráfico de Sectores - TAMAÑO AUMENTADO
                     sector_counts = filtered_df.iloc[:, 5].value_counts().reset_index()
                     sector_counts.columns = ['Sector', 'Count']
                     fig1 = px.pie(sector_counts, values='Count', names='Sector', hole=0.6, color_discrete_sequence=px.colors.sequential.Bluyl)
-                    fig1.update_layout(title_text="Distribución por Sector", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color="white"))
+                    # AQUÍ ESTÁ EL CAMBIO DE TAMAÑO Y MÁRGENES
+                    fig1.update_layout(
+                        title_text="Distribución por Sector", 
+                        height=350, # Altura forzada
+                        margin=dict(l=20, r=20, t=40, b=20), # Márgenes reducidos
+                        paper_bgcolor="rgba(0,0,0,0)", 
+                        plot_bgcolor="rgba(0,0,0,0)", 
+                        font=dict(color="white")
+                    )
                     st.plotly_chart(fig1, use_container_width=True)
                 with g2:
                     # Gráfico de Probabilidad (Barras)
                     prob_counts = filtered_df.iloc[:, 9].value_counts().reset_index()
                     prob_counts.columns = ['Probabilidad', 'Count']
                     fig2 = px.bar(prob_counts, x='Probabilidad', y='Count', color='Probabilidad', color_discrete_sequence=px.colors.qualitative.Bold)
-                    fig2.update_layout(title_text="Análisis de Probabilidad", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color="white"), showlegend=False)
+                    fig2.update_layout(
+                        title_text="Análisis de Probabilidad", 
+                        height=350,
+                        margin=dict(l=20, r=20, t=40, b=20),
+                        paper_bgcolor="rgba(0,0,0,0)", 
+                        plot_bgcolor="rgba(0,0,0,0)", 
+                        font=dict(color="white"), 
+                        showlegend=False
+                    )
                     st.plotly_chart(fig2, use_container_width=True)
 
         st.markdown("---")
 
-        # --- GRID DE RESULTADOS (LAS TARJETAS) ---
+        # --- GRID DE RESULTADOS (SOLUCIÓN DEL BUG DE ALINEACIÓN) ---
         if total_ops == 0:
             st.info("⚠️ No hay resultados que coincidan con tus filtros de búsqueda.")
         else:
             cols = st.columns(2) # Grid de 2 columnas responsive
             
-            for i, row in filtered_df.iterrows():
-                # Extracción segura de datos
+            # USO DE ENUMERATE: Esto arregla el problema de los espacios vacíos
+            for i, (index, row) in enumerate(filtered_df.iterrows()):
+                
                 titulo = row.iloc[1]
                 sector = row.iloc[5]
                 tags_raw = str(row.iloc[2]).split('|')
@@ -434,11 +446,8 @@ if check_password():
                 link_boe = str(row.iloc[0])
                 
                 img_url = get_img_url(sector, titulo)
-
-                # Definir color del badge según probabilidad
                 badge_color = "#10b981" if "ALTA" in probabilidad else ("#f59e0b" if "MEDIA" in probabilidad else "#64748b")
                 
-                # HTML DE LA TARJETA
                 card_html = f"""
                 <div class="titan-card">
                     <div class="card-badge" style="color:{badge_color}; border-color:{badge_color};">● {probabilidad}</div>
@@ -464,11 +473,10 @@ if check_password():
                 </div>
                 """
                 
-                # Renderizado
+                # Renderizado en Zig-Zag Perfecto
                 with cols[i % 2]:
                     st.markdown(card_html, unsafe_allow_html=True)
                     
-                    # Botonera de acción (Streamlit native para funcionalidad)
                     with st.expander("🔻 ESTRATEGIA & ANÁLISIS IA", expanded=False):
                         st.markdown(f"""
                         <div style='background:rgba(255,255,255,0.05); padding:15px; border-radius:8px; border-left:3px solid var(--accent);'>
@@ -478,15 +486,14 @@ if check_password():
                         """, unsafe_allow_html=True)
                         
                         st.markdown("#### 📋 Requisitos Clave")
-                        st.caption(str(row.iloc[8])[:300] + "...") # Preview de requisitos
+                        st.caption(str(row.iloc[8])[:300] + "...") 
                         
                         st.markdown("<br>", unsafe_allow_html=True)
                         c_btn1, c_btn2 = st.columns([1,1])
                         with c_btn1:
                             st.link_button("📄 VER BOE OFICIAL", link_boe, use_container_width=True)
                         with c_btn2:
-                            # Botón simulado
-                            st.button("⭐ SEGUIR", key=f"fav_{i}", use_container_width=True)
+                            st.button("⭐ SEGUIR", key=f"fav_{index}", use_container_width=True)
                     
                     st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
 
