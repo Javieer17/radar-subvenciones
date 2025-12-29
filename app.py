@@ -425,7 +425,7 @@ if check_password():
 
         st.markdown("---")
 
-        # --- GRID DE RESULTADOS (SOLUCIÓN DEL BUG DE ALINEACIÓN) ---
+        # --- GRID DE RESULTADOS (SOLUCIÓN DEL BUG DE ALINEACIÓN + ERROR HTML) ---
         if total_ops == 0:
             st.info("⚠️ No hay resultados que coincidan con tus filtros de búsqueda.")
         else:
@@ -448,30 +448,31 @@ if check_password():
                 img_url = get_img_url(sector, titulo)
                 badge_color = "#10b981" if "ALTA" in probabilidad else ("#f59e0b" if "MEDIA" in probabilidad else "#64748b")
                 
+                # --- AQUÍ ESTABA EL ERROR: HE ELIMINADO LA INDENTACIÓN DEL HTML ---
+                # Al ponerlo todo pegado a la izquierda, Streamlit ya no piensa que es código.
                 card_html = f"""
-                <div class="titan-card">
-                    <div class="card-badge" style="color:{badge_color}; border-color:{badge_color};">● {probabilidad}</div>
-                    <div class="card-img-container">
-                        <img src="{img_url}" class="card-img">
-                        <div class="card-overlay"></div>
-                    </div>
-                    <div class="card-body">
-                        <div class="card-title" title="{titulo}">{titulo}</div>
-                        <div style="margin-bottom:10px;">{tags_html}</div>
-                        
-                        <div class="specs-grid">
-                            <div class="spec-item">
-                                <span class="spec-label">Cuantía Disp.</span>
-                                <span class="spec-value">{cuantia}</span>
-                            </div>
-                            <div class="spec-item">
-                                <span class="spec-label">Cierre</span>
-                                <span class="spec-value">{plazo}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                """
+<div class="titan-card">
+<div class="card-badge" style="color:{badge_color}; border-color:{badge_color};">● {probabilidad}</div>
+<div class="card-img-container">
+<img src="{img_url}" class="card-img">
+<div class="card-overlay"></div>
+</div>
+<div class="card-body">
+<div class="card-title" title="{titulo}">{titulo}</div>
+<div style="margin-bottom:10px;">{tags_html}</div>
+<div class="specs-grid">
+<div class="spec-item">
+<span class="spec-label">Cuantía Disp.</span>
+<span class="spec-value">{cuantia}</span>
+</div>
+<div class="spec-item">
+<span class="spec-label">Cierre</span>
+<span class="spec-value">{plazo}</span>
+</div>
+</div>
+</div>
+</div>
+"""
                 
                 # Renderizado en Zig-Zag Perfecto
                 with cols[i % 2]:
