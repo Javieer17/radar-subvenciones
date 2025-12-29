@@ -268,7 +268,7 @@ def check_password():
     return True
 
 # ==============================================================================
-# 4. LÓGICA DE DATOS Y NUEVAS FUNCIONES IA (DEL CÓDIGO 2)
+# 4. LÓGICA DE DATOS Y FUNCIONES IA (MEJORADO PDF Y TEXTO)
 # ==============================================================================
 @st.cache_data(ttl=600)
 def load_data():
@@ -283,7 +283,6 @@ def load_data():
     except Exception as e:
         return None
 
-# --- FUNCIÓN NUEVA: INVESTIGACIÓN IA ---
 def investigar_con_ia(titulo, link_boe):
     try:
         tavily = TavilyClient(api_key=st.secrets["tavily_key"])
@@ -302,7 +301,7 @@ def investigar_con_ia(titulo, link_boe):
         Responde en Markdown con:
         1. 🔍 REQUISITOS TÉCNICOS EXTRA (No evidentes)
         2. ⚠️ EXCLUSIONES CLAVE (Quién NO puede pedirla)
-        3. 💡 CONSEJO ESTRATÉGICO PARA GANAR
+        3. 💡 ESTRATEGIA DE JUSTIFICACIÓN Y ÉXITO
         """
         
         chat = client.chat.completions.create(
@@ -313,40 +312,73 @@ def investigar_con_ia(titulo, link_boe):
     except Exception as e:
         return f"Error en la investigación: {str(e)}"
 
-# --- FUNCIÓN NUEVA: GENERADOR PDF ---
-def generar_pdf(titulo, resumen, requisitos, investigacion):
-    pdf = FPDF()
+# --- [MODIFICACIÓN 1] FUNCIÓN DE LIMPIEZA DE TEXTO PARA PDF ---
+def clean_text_for_pdf(text):
+    if not isinstance(text, str): return str(text)
+    # Diccionario de sustitución de caracteres problemáticos para 'latin-1'
+    replacements = {
+        '\u2013': '-', '\u2014': '-', '\u2018': "'", '\u2019': "'",
+        '\u201c': '"', '\u201d': '"', '•': '-', '…': '...', '€': 'EUR',
+        '⭐': '*', '💠': '', '✅': '[SI]', '⚠️': '[!]', '🔍': '[Q]', '💡': '[IDEA]'
+    }
+    for char, replacement in replacements.items():
+        text = text.replace(char, replacement)
+    
+    # Intenta codificar a latin-1, reemplazando lo que no pueda por '?'
+    return text.encode('latin-1', 'replace').decode('latin-1')
+
+# --- [MODIFICACIÓN 2] GENERADOR PDF CON CLASE PROFESIONAL ---
+class PDFReport(FPDF):
+    def header(self):
+        self.set_font('Arial', 'B', 10)
+        self.set_text_color(150, 150, 150)
+        self.cell(0, 10, 'INFORME DE INTELIGENCIA DE SUBVENCIONES | TITAN X', 0, 1, 'R')
+        self.ln(5)
+
+    def footer(self):
+        self.set_y(-15)
+        self.set_font('Arial', 'I', 8)
+        self.set_text_color(150, 150, 150)
+        self.cell(0, 10, f'Pagina {self.page_no()}', 0, 0, 'C')
+
+def generar_pdf(titulo, resumen_n8n, requisitos_n8n, investigacion_ia):
+    pdf = PDFReport()
     pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=15)
     
-    # Header
-    pdf.set_font("Arial", 'B', 20)
-    pdf.set_text_color(59, 130, 246)
-    pdf.cell(0, 15, "INFORME ESTRATEGICO TITAN X", ln=True, align='C')
+    # TITULO PRINCIPAL
+    pdf.set_font("Arial", 'B', 16)
+    pdf.set_text_color(23, 37, 84) # Azul oscuro
+    pdf.multi_cell(0, 8, clean_text_for_pdf(titulo.upper()), align='L')
     pdf.ln(5)
     
-    # Titulo Ayuda
-    pdf.set_font("Arial", 'B', 14)
-    pdf.set_text_color(15, 23, 42)
-    pdf.multi_cell(0, 10, f"AYUDA: {titulo.upper()}")
-    pdf.ln(5)
+    # LÍNEA DIVISORIA
+    pdf.set_draw_color(6, 182, 212) # Cyan Accent
+    pdf.set_line_width(0.5)
+    pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+    pdf.ln(8)
     
-    # Secciones
+    # SECCIONES
     sections = [
-        ("RESUMEN EJECUTIVO", resumen),
-        ("REQUISITOS DECLARADOS", requisitos),
-        ("AUDITORIA PROFUNDA IA", investigacion)
+        ("1. RESUMEN EJECUTIVO (TITAN DB)", resumen_n8n),
+        ("2. REQUISITOS OFICIALES Y ESPECÍFICOS", requisitos_n8n),
+        ("3. AUDITORÍA ESTRATÉGICA Y RECOMENDACIONES (IA)", investigacion_ia)
     ]
     
     for sec_title, sec_content in sections:
+        # Título Sección
         pdf.set_font("Arial", 'B', 12)
-        pdf.set_fill_color(241, 245, 249)
-        pdf.cell(0, 10, sec_title, ln=True, fill=True)
+        pdf.set_fill_color(240, 249, 255) # Azul muy claro
+        pdf.set_text_color(0, 0, 0)
+        pdf.cell(0, 10, clean_text_for_pdf(sec_title), ln=True, fill=True)
+        pdf.ln(3)
+        
+        # Contenido
         pdf.set_font("Arial", '', 10)
-        pdf.ln(2)
-        # Limpieza de caracteres no compatibles con FPDF estándar
-        clean_text = str(sec_content).encode('latin-1', 'replace').decode('latin-1')
-        pdf.multi_cell(0, 7, clean_text)
-        pdf.ln(5)
+        pdf.set_text_color(50, 50, 50)
+        content_cleaned = clean_text_for_pdf(sec_content)
+        pdf.multi_cell(0, 6, content_cleaned)
+        pdf.ln(6)
         
     return pdf.output(dest='S').encode('latin-1')
 
@@ -371,7 +403,7 @@ def get_img_url(sector, titulo):
     return "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80"
 
 # ==============================================================================
-# 5. UI PRINCIPAL (CONSERVA DISEÑO CÓDIGO 1 + FUNCIONES CÓDIGO 2)
+# 5. UI PRINCIPAL (CONSERVA DISEÑO CÓDIGO 1 + FUNCIONES MEJORADAS)
 # ==============================================================================
 if check_password():
     
@@ -503,33 +535,44 @@ if check_password():
                 with cols[i % 2]:
                     st.markdown(card_html, unsafe_allow_html=True)
                     
-                    # --- [NUEVO BLOQUE] INVESTIGACIÓN PROFUNDA Y PDF (DEL CÓDIGO 2) ---
-                    # Lo he integrado estéticamente dentro del flujo de la tarjeta
+                    # --- [SECCIÓN CRÍTICA ACTUALIZADA] Lógica de Botón "One-Shot" y PDF ---
                     with st.expander("🔬 INVESTIGACIÓN PROFUNDA & PDF"):
-                        c_ia1, c_ia2 = st.columns(2)
+                        # Definimos una clave única para esta investigación en el session_state
+                        key_investigacion = f"investigacion_{index}"
                         
-                        # Botón para disparar la búsqueda en tiempo real
-                        if c_ia1.button("🔍 Buscar Bases Reales", key=f"ai_btn_{index}", use_container_width=True):
-                            with st.spinner("TITAN AI analizando bases oficiales en tiempo real..."):
-                                res_profundo = investigar_con_ia(titulo, link_boe)
-                                st.session_state[f"investigacion_{index}"] = res_profundo
+                        # CASO 1: NO SE HA BUSCADO TODAVÍA (Muestra el botón)
+                        if key_investigacion not in st.session_state:
+                            st.info("💡 La IA analizará las bases oficiales en tiempo real (Consume 1 crédito).")
+                            # Al hacer clic, ejecuta y LUEGO recarga la página
+                            if st.button("🔍 Buscar Bases Reales", key=f"ai_btn_{index}", use_container_width=True):
+                                with st.spinner("⏳ TITAN AI conectando con BOE y Bases Reguladoras... (Espera unos segundos)"):
+                                    res_profundo = investigar_con_ia(titulo, link_boe)
+                                    st.session_state[key_investigacion] = res_profundo
+                                    st.rerun() # <--- ESTA LÍNEA ES MÁGICA: Recarga para ocultar el botón
                         
-                        # Mostrar resultado de la investigación si existe
-                        if f"investigacion_{index}" in st.session_state:
-                            st.info(st.session_state[f"investigacion_{index}"])
-                            
-                            # Botón de PDF dinámico
-                            pdf_data = generar_pdf(titulo, analisis_ia, requisitos_txt, st.session_state[f"investigacion_{index}"])
-                            c_ia2.download_button(
-                                label="📥 Descargar PDF Informe",
-                                data=pdf_data,
-                                file_name=f"Informe_Titan_{index}.pdf",
-                                mime="application/pdf",
-                                use_container_width=True,
-                                key=f"pdf_btn_{index}"
-                            )
+                        # CASO 2: YA SE HA BUSCADO (Muestra resultado y descarga)
                         else:
-                            c_ia2.warning("👆 Haz clic en Buscar primero")
+                            st.success("✅ Análisis de Bases Oficiales Completado")
+                            st.info(st.session_state[key_investigacion])
+                            
+                            # Generación del PDF con el nuevo formato limpio y estructurado
+                            pdf_data = generar_pdf(titulo, analisis_ia, requisitos_txt, st.session_state[key_investigacion])
+                            
+                            c_dl1, c_dl2 = st.columns([2,1])
+                            with c_dl1:
+                                st.download_button(
+                                    label="📥 Descargar Informe PDF (Completo)",
+                                    data=pdf_data,
+                                    file_name=f"Informe_Titan_{index}.pdf",
+                                    mime="application/pdf",
+                                    use_container_width=True,
+                                    key=f"pdf_btn_{index}"
+                                )
+                            with c_dl2:
+                                # Opción para borrar caché si el usuario quiere gastar otro crédito
+                                if st.button("🔄 Reiniciar", key=f"reset_{index}", use_container_width=True):
+                                    del st.session_state[key_investigacion]
+                                    st.rerun()
 
                     # --- [BLOQUE ORIGINAL] ANÁLISIS PREVIO ---
                     with st.expander("🔻 ANÁLISIS IA (PREVIO)", expanded=False):
