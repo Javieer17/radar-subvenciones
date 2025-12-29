@@ -4,6 +4,9 @@ import requests
 import io
 import plotly.express as px
 import time
+from groq import Groq
+from tavily import TavilyClient
+from fpdf import FPDF
 
 # ==============================================================================
 # 1. CONFIGURACIÓN DEL MOTOR
@@ -16,7 +19,7 @@ st.set_page_config(
 )
 
 # ==============================================================================
-# 2. CSS DINÁMICO (TITAN ADAPTIVE THEME)
+# 2. CSS DINÁMICO (TITAN ADAPTIVE THEME) - CONSERVADO DEL CÓDIGO 1
 # ==============================================================================
 st.markdown("""
     <style>
@@ -265,7 +268,7 @@ def check_password():
     return True
 
 # ==============================================================================
-# 4. LÓGICA DE DATOS
+# 4. LÓGICA DE DATOS Y NUEVAS FUNCIONES IA (DEL CÓDIGO 2)
 # ==============================================================================
 @st.cache_data(ttl=600)
 def load_data():
@@ -279,6 +282,73 @@ def load_data():
         return df
     except Exception as e:
         return None
+
+# --- FUNCIÓN NUEVA: INVESTIGACIÓN IA ---
+def investigar_con_ia(titulo, link_boe):
+    try:
+        tavily = TavilyClient(api_key=st.secrets["tavily_key"])
+        client = Groq(api_key=st.secrets["groq_key"])
+        
+        # Búsqueda optimizada (consumo: 1 crédito básico)
+        search_query = f"requisitos beneficiarios exclusiones bases reguladoras {titulo} oficial"
+        busqueda = tavily.search(query=search_query, search_depth="basic", max_results=3)
+        contexto = "\n".join([f"Fuente: {r['url']}\nContenido: {r['content']}" for r in busqueda['results']])
+
+        prompt = f"""Eres un Consultor Senior. Analiza estos datos y extrae requisitos críticos escondidos.
+        TITULO: {titulo}
+        LINK: {link_boe}
+        CONTEXTO INTERNET: {contexto}
+        
+        Responde en Markdown con:
+        1. 🔍 REQUISITOS TÉCNICOS EXTRA (No evidentes)
+        2. ⚠️ EXCLUSIONES CLAVE (Quién NO puede pedirla)
+        3. 💡 CONSEJO ESTRATÉGICO PARA GANAR
+        """
+        
+        chat = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": prompt}]
+        )
+        return chat.choices[0].message.content
+    except Exception as e:
+        return f"Error en la investigación: {str(e)}"
+
+# --- FUNCIÓN NUEVA: GENERADOR PDF ---
+def generar_pdf(titulo, resumen, requisitos, investigacion):
+    pdf = FPDF()
+    pdf.add_page()
+    
+    # Header
+    pdf.set_font("Arial", 'B', 20)
+    pdf.set_text_color(59, 130, 246)
+    pdf.cell(0, 15, "INFORME ESTRATEGICO TITAN X", ln=True, align='C')
+    pdf.ln(5)
+    
+    # Titulo Ayuda
+    pdf.set_font("Arial", 'B', 14)
+    pdf.set_text_color(15, 23, 42)
+    pdf.multi_cell(0, 10, f"AYUDA: {titulo.upper()}")
+    pdf.ln(5)
+    
+    # Secciones
+    sections = [
+        ("RESUMEN EJECUTIVO", resumen),
+        ("REQUISITOS DECLARADOS", requisitos),
+        ("AUDITORIA PROFUNDA IA", investigacion)
+    ]
+    
+    for sec_title, sec_content in sections:
+        pdf.set_font("Arial", 'B', 12)
+        pdf.set_fill_color(241, 245, 249)
+        pdf.cell(0, 10, sec_title, ln=True, fill=True)
+        pdf.set_font("Arial", '', 10)
+        pdf.ln(2)
+        # Limpieza de caracteres no compatibles con FPDF estándar
+        clean_text = str(sec_content).encode('latin-1', 'replace').decode('latin-1')
+        pdf.multi_cell(0, 7, clean_text)
+        pdf.ln(5)
+        
+    return pdf.output(dest='S').encode('latin-1')
 
 def get_tag_bg(tag):
     t = tag.lower()
@@ -301,7 +371,7 @@ def get_img_url(sector, titulo):
     return "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80"
 
 # ==============================================================================
-# 5. UI PRINCIPAL
+# 5. UI PRINCIPAL (CONSERVA DISEÑO CÓDIGO 1 + FUNCIONES CÓDIGO 2)
 # ==============================================================================
 if check_password():
     
@@ -347,29 +417,25 @@ if check_password():
         kpi1.metric("OPORTUNIDADES", total_ops, delta="Activas")
         kpi2.metric("ALTA PROBABILIDAD", high_prob, delta="Prioritarias", delta_color="normal")
         kpi3.metric("RATIO DE ÉXITO", f"{ratio}%")
-        kpi4.metric("ACTUALIZACIÓN", "Hace 2 min")
+        kpi4.metric("ACTUALIZACIÓN", "En Vivo")
 
         # --- GRÁFICOS (ADAPTABLES A LUZ/OSCURIDAD) ---
         with st.expander("📊 ANALÍTICA DE MERCADO", expanded=False):
             if total_ops > 0:
                 g1, g2 = st.columns(2)
                 with g1:
-                    # === CORRECCIÓN GRÁFICO 1: PIE CHART ===
                     sector_counts = filtered_df.iloc[:, 5].value_counts().reset_index()
                     sector_counts.columns = ['Sector', 'Count']
                     fig1 = px.pie(sector_counts, values='Count', names='Sector', hole=0.6, color_discrete_sequence=px.colors.sequential.Bluyl)
                     
-                    # AQUÍ ESTÁ EL ARREGLO: Ocultamos leyenda (showlegend=False)
-                    # Y añadimos hover detallado para que se vea limpio.
                     fig1.update_layout(
                         title_text="Distribución por Sector", 
                         height=350,
                         margin=dict(l=20, r=20, t=40, b=20),
                         paper_bgcolor="rgba(0,0,0,0)", 
                         plot_bgcolor="rgba(0,0,0,0)",
-                        showlegend=False  # <--- ESTO ELIMINA EL SOLAPAMIENTO
+                        showlegend=False
                     )
-                    # Mejoramos la información al pasar el ratón
                     fig1.update_traces(hovertemplate='<b>%{label}</b><br>Cantidad: %{value}<br>(%{percent})')
                     
                     st.plotly_chart(fig1, use_container_width=True)
@@ -404,11 +470,13 @@ if check_password():
                 plazo = row.iloc[4]
                 probabilidad = str(row.iloc[9]).strip().upper()
                 analisis_ia = row.iloc[6]
+                requisitos_txt = row.iloc[8] # Variable necesaria para el PDF
                 link_boe = str(row.iloc[0])
                 img_url = get_img_url(sector, titulo)
                 
                 badge_color = "#10b981" if "ALTA" in probabilidad else ("#f59e0b" if "MEDIA" in probabilidad else "#64748b")
                 
+                # HTML DE LA TARJETA (INTACTO DEL CÓDIGO 1)
                 card_html = f"""
 <div class="titan-card">
 <div class="card-badge" style="border-color:{badge_color}; color:{badge_color}">● {probabilidad}</div>
@@ -434,7 +502,37 @@ if check_password():
 """
                 with cols[i % 2]:
                     st.markdown(card_html, unsafe_allow_html=True)
-                    with st.expander("🔻 ANÁLISIS IA", expanded=False):
+                    
+                    # --- [NUEVO BLOQUE] INVESTIGACIÓN PROFUNDA Y PDF (DEL CÓDIGO 2) ---
+                    # Lo he integrado estéticamente dentro del flujo de la tarjeta
+                    with st.expander("🔬 INVESTIGACIÓN PROFUNDA & PDF"):
+                        c_ia1, c_ia2 = st.columns(2)
+                        
+                        # Botón para disparar la búsqueda en tiempo real
+                        if c_ia1.button("🔍 Buscar Bases Reales", key=f"ai_btn_{index}", use_container_width=True):
+                            with st.spinner("TITAN AI analizando bases oficiales en tiempo real..."):
+                                res_profundo = investigar_con_ia(titulo, link_boe)
+                                st.session_state[f"investigacion_{index}"] = res_profundo
+                        
+                        # Mostrar resultado de la investigación si existe
+                        if f"investigacion_{index}" in st.session_state:
+                            st.info(st.session_state[f"investigacion_{index}"])
+                            
+                            # Botón de PDF dinámico
+                            pdf_data = generar_pdf(titulo, analisis_ia, requisitos_txt, st.session_state[f"investigacion_{index}"])
+                            c_ia2.download_button(
+                                label="📥 Descargar PDF Informe",
+                                data=pdf_data,
+                                file_name=f"Informe_Titan_{index}.pdf",
+                                mime="application/pdf",
+                                use_container_width=True,
+                                key=f"pdf_btn_{index}"
+                            )
+                        else:
+                            c_ia2.warning("👆 Haz clic en Buscar primero")
+
+                    # --- [BLOQUE ORIGINAL] ANÁLISIS PREVIO ---
+                    with st.expander("🔻 ANÁLISIS IA (PREVIO)", expanded=False):
                         # Caja de análisis dinámica (usa variables CSS)
                         st.markdown(f"""
                         <div style='background:var(--bg-app); padding:15px; border-radius:8px; border-left:3px solid var(--accent); color:var(--text-secondary);'>
@@ -443,7 +541,7 @@ if check_password():
                         </div>
                         """, unsafe_allow_html=True)
                         st.markdown("#### 📋 Requisitos")
-                        st.caption(str(row.iloc[8])[:300] + "...") 
+                        st.caption(str(requisitos_txt)[:300] + "...") 
                         st.markdown("<br>", unsafe_allow_html=True)
                         c_btn1, c_btn2 = st.columns([1,1])
                         with c_btn1: st.link_button("📄 VER BOE", link_boe, use_container_width=True)
