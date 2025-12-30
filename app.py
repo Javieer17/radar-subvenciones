@@ -299,17 +299,30 @@ def get_tag_bg(tag):
 #  IMÁGENES CORREGIDAS (IDS ESTÁTICOS DE UNSPLASH)
 # ==============================================================================
 def get_img_url(sector, titulo):
+    # 1. Convertimos a minúsculas
     text_content = (str(sector) + " " + str(titulo)).lower()
+    
+    # 2. ELIMINACIÓN DE TILDES AUTOMÁTICA (TRUCO PRO)
+    # Esto hace que 'Eólica' se convierta en 'eolica' para que no falle nunca
+    replacements = (
+        ("á", "a"), ("é", "e"), ("í", "i"), ("ó", "o"), ("ú", "u"), ("ü", "u"),
+        ("ñ", "n") # Opcional, pero ayuda a veces
+    )
+    for a, b in replacements:
+        text_content = text_content.replace(a, b)
     
     # URL BASE DE UNSPLASH (Optimizada para tarjetas)
     # Usamos IDs específicos para evitar errores 404
     base_params = "?auto=format&fit=crop&w=800&q=80"
     
-    # 1. EMERGENCIAS / DANA (Prioridad)
+    # --- AHORA BUSCAMOS SIEMPRE SIN TILDES EN LAS LISTAS ---
+
+    # 1. EMERGENCIAS / DANA
     if any(x in text_content for x in ['dana', 'catastrofe', 'emergencia', 'inundaci']): 
-        return f"https://images.unsplash.com/photo-1639164631388-857f29935861{base_params}" # Inundacion/Rescate
+        return f"https://images.unsplash.com/photo-1639164631388-857f29935861{base_params}"
 
     # 2. ENERGÍA EÓLICA (Tu foto)
+    # Fíjate que pongo 'eolic' y 'aerogenerador' sin preocuparme de tildes
     if any(x in text_content for x in ['eolic', 'viento', 'aerogenerador', 'wind']): 
         return f"https://images.unsplash.com/photo-1548337138-e87d889cc369{base_params}"
 
@@ -319,19 +332,20 @@ def get_img_url(sector, titulo):
 
     # 4. MOVILIDAD / MOVES / COCHES
     if any(x in text_content for x in ['moves', 'coche', 'vehiculo', 'puntos de recarga', 'automocion']): 
-        return f"https://images.unsplash.com/photo-1596731498067-99aeb581d3d7{base_params}" # Coche electrico cargando
+        return f"https://images.unsplash.com/photo-1596731498067-99aeb581d3d7{base_params}"
 
     # 5. SALUD / SOCIO-SANITARIO
     if any(x in text_content for x in ['salud', 'sanitar', 'farma', 'medic', 'hospital', 'cancer']): 
-        return f"https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7{base_params}" # Médicos/Laboratorio
+        return f"https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7{base_params}"
 
     # 6. INDUSTRIA / CADENA DE VALOR
     if any(x in text_content for x in ['indust', 'manufac', 'fabrica', 'maquina', 'cadena de valor']): 
-        return f"https://images.unsplash.com/photo-1581091226825-a6a2a5aee158{base_params}" # Fábrica/Robot
+        return f"https://images.unsplash.com/photo-1581091226825-a6a2a5aee158{base_params}"
 
     # 7. EDUCACIÓN / FORMACIÓN / LECTORADOS / BECAS
-    if any(x in text_content for x in ['educa', 'formaci', 'universidad', 'beca', 'lector', 'curso']): 
-        return f"https://images.unsplash.com/photo-1524178232363-1fb2b075b655{base_params}" # Clase/Conferencia
+    # Aquí 'formación' daría problemas, así que buscamos 'formaci' o 'formacion' (sin tilde gracias al truco)
+    if any(x in text_content for x in ['educa', 'formaci', 'universidad', 'beca', 'lector', 'curso', 'fp', 'profesional']): 
+        return f"https://images.unsplash.com/photo-1524178232363-1fb2b075b655{base_params}"
 
     # 8. DIGITAL / IA / SOFTWARE
     if any(x in text_content for x in ['digital', 'ia ', 'softw', 'tic', 'cyber', 'ciber']): 
@@ -349,12 +363,43 @@ def get_img_url(sector, titulo):
     if any(x in text_content for x in ['construc', 'vivienda', 'rehab', 'edific']):
         return f"https://images.unsplash.com/photo-1503387762-592deb58ef4e{base_params}"
 
-    # 12. MARITIMO / NAVAL (¡CORREGIDO!)
-    if any(x in text_content for x in ['maritimo', 'marítimo', 'naval', 'barco', 'puerto', 'portuari', 'mercancia', 'transporte']): 
+    # 12. MARITIMO / NAVAL (TU FOTO BARCO)
+    # Ahora detectará "Marítimo" aunque lleve tilde
+    if any(x in text_content for x in ['maritimo', 'naval', 'barco', 'puerto', 'portuari', 'mercancia', 'transporte']): 
         return f"https://images.unsplash.com/photo-1606185540834-d6e7483ee1a4{base_params}"
 
+    # --- NUEVAS CATEGORÍAS ---
+
+    # 13. HIDROELÉCTRICA / REPOTENCIACIÓN
+    if any(x in text_content for x in ['hidro', 'repotencia', 'central', 'presa', 'agua']): 
+        return f"https://images.unsplash.com/photo-1468421201266-2a86ef21940d{base_params}"
+
+    # 14. I+D+i / STARTUPS
+    if any(x in text_content for x in ['startup', 'emprende', 'idi', 'innovacion', 'tecnologic', 'investig']): 
+        return f"https://images.unsplash.com/photo-1519389950473-47ba0277781c{base_params}"
+
+    # 15. CULTURA / PATRIMONIO
+    if any(x in text_content for x in ['cultur', 'patrimonio', 'historic', 'archivo', 'museo', 'arte']): 
+        return f"https://images.unsplash.com/photo-1544211603-99b3b8793540{base_params}"
+
+    # 16. OBRAS CIVILES / PAVIMENTACIÓN
+    if any(x in text_content for x in ['paviment', 'calle', 'obra', 'asfalt', 'urbaniz']): 
+        return f"https://images.unsplash.com/photo-1621255558983-0498b98b76c1{base_params}"
+
+    # 17. COMBUSTIBLES / GAS
+    if any(x in text_content for x in ['gas', 'combustible', 'hidrogeno', 'renovable', 'biogas']): 
+        return f"https://images.unsplash.com/photo-1626573867620-302324147748{base_params}"
+
+    # 18. ASESORAMIENTO / DIGITALIZACIÓN
+    if any(x in text_content for x in ['asesora', 'consultor', 'transformacion', 'kit digital']): 
+        return f"https://images.unsplash.com/photo-1552664730-d307ca884978{base_params}"
+
+    # 19. JUVENTUD / ASOCIACIONES
+    if any(x in text_content for x in ['joven', 'juvenil', 'estudiante', 'egresado', 'asociaci', 'federacion']): 
+        return f"https://images.unsplash.com/photo-1523240795612-9a054b0db644{base_params}"
+
     # DEFAULT
-    return f"https://images.unsplash.com/photo-1497215728101-856f4ea42174{base_params}" # Oficina Business
+    return f"https://images.unsplash.com/photo-1497215728101-856f4ea42174{base_params}"
     
 # ==============================================================================
 # 5. UI PRINCIPAL
@@ -490,6 +535,7 @@ if check_password():
                         with c_btn2: st.button("⭐ SEGUIR", key=f"fav_{index}", use_container_width=True)
                     st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
     else: st.error("DATABASE ERROR")
+
 
 
 
