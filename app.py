@@ -307,7 +307,7 @@ def get_img_url(sector, titulo):
     
     # 1. EMERGENCIAS / DANA (Prioridad)
     if any(x in text_content for x in ['dana', 'catastrofe', 'emergencia', 'inundaci']): 
-        return f"https://images.unsplash.com/photo-1633511090164-b43840ea1607{base_params}" # Inundacion/Rescate
+        return f"https://images.unsplash.com/photo-1639164631388-857f29935861{base_params}" # Inundacion/Rescate
 
     # 2. ENERGÍA EÓLICA (Tu foto)
     if any(x in text_content for x in ['eolic', 'viento', 'aerogenerador', 'wind']): 
@@ -315,11 +315,11 @@ def get_img_url(sector, titulo):
 
     # 3. ENERGÍA SOLAR / FOTOVOLTAICA
     if any(x in text_content for x in ['solar', 'fotov', 'placas']): 
-        return f"https://images.unsplash.com/photo-1509391366360-2e959784a276{base_params}"
+        return f"https://images.unsplash.com/photo-1756913454593-ac5cab482a7a{base_params}"
 
     # 4. MOVILIDAD / MOVES / COCHES
     if any(x in text_content for x in ['moves', 'coche', 'vehiculo', 'puntos de recarga', 'automocion']): 
-        return f"https://images.unsplash.com/photo-1617788138017-80ad40651399{base_params}" # Coche electrico cargando
+        return f"https://images.unsplash.com/photo-1596731498067-99aeb581d3d7{base_params}" # Coche electrico cargando
 
     # 5. SALUD / SOCIO-SANITARIO
     if any(x in text_content for x in ['salud', 'sanitar', 'farma', 'medic', 'hospital', 'cancer']): 
@@ -335,7 +335,7 @@ def get_img_url(sector, titulo):
 
     # 8. DIGITAL / IA / SOFTWARE
     if any(x in text_content for x in ['digital', 'ia ', 'softw', 'tic', 'cyber', 'ciber']): 
-        return f"https://images.unsplash.com/photo-1451187580459-43490279c0fa{base_params}"
+        return f"https://images.unsplash.com/photo-1580894894513-541e068a3e2b{base_params}"
 
     # 9. AGRO / CAMPO
     if any(x in text_content for x in ['agro', 'campo', 'forest', 'ganad', 'rural']): 
@@ -490,6 +490,7 @@ if check_password():
                         with c_btn2: st.button("⭐ SEGUIR", key=f"fav_{index}", use_container_width=True)
                     st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
     else: st.error("DATABASE ERROR")
+
 
 
 
