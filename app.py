@@ -349,9 +349,9 @@ def get_img_url(sector, titulo):
     if any(x in text_content for x in ['construc', 'vivienda', 'rehab', 'edific']):
         return f"https://images.unsplash.com/photo-1503387762-592deb58ef4e{base_params}"
 
-    # 12. MARITIMO / NAVAL
-    if any(x in text_content for x in ['mar', 'naval', 'barco', 'portuari']): 
-        return f"https://images.unsplash.com/photo-1559620076-78b105d15c8e{base_params}"
+    # 12. MARITIMO / NAVAL (¡CORREGIDO!)
+    if any(x in text_content for x in ['maritimo', 'marítimo', 'naval', 'barco', 'puerto', 'portuari', 'mercancia']): 
+        return f"https://images.unsplash.com/photo-1494412574643-35d324698595{base_params}"
 
     # DEFAULT
     return f"https://images.unsplash.com/photo-1497215728101-856f4ea42174{base_params}" # Oficina Business
@@ -490,3 +490,4 @@ if check_password():
                         with c_btn2: st.button("⭐ SEGUIR", key=f"fav_{index}", use_container_width=True)
                     st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
     else: st.error("DATABASE ERROR")
+
