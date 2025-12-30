@@ -4,9 +4,9 @@ import requests
 import io
 import plotly.express as px
 import time
-import re # Usaremos esto para filtrar el texto de las fechas
+import re
 import os
-from datetime import datetime # Necesario para saber el día de hoy
+from datetime import datetime # IMPRESCINDIBLE PARA LAS FECHAS
 from groq import Groq
 from tavily import TavilyClient
 from fpdf import FPDF
@@ -27,10 +27,8 @@ st.set_page_config(
 # ==============================================================================
 st.markdown("""
 <style>
-/* IMPORTACIÓN DE FUENTES */
 @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700;800&family=Outfit:wght@300;400;700;900&display=swap');
 
-/* --- VARIABLES DE COLORES --- */
 :root {
     --bg-app: #f8fafc;
     --card-bg: #ffffff;
@@ -69,7 +67,6 @@ h1, h2, h3 { font-family: 'Outfit', sans-serif !important; font-weight: 800 !imp
     font-size: 3rem; font-weight: 900; margin-bottom: 0px;
 }
 
-/* --- ESTILOS DE KPIS --- */
 div[data-testid="metric-container"] {
     background-color: var(--metric-bg); 
     border: 1px solid var(--card-border);
@@ -101,7 +98,6 @@ div[data-testid="metric-container"]:hover {
     letter-spacing: 1px;
 }
 
-/* --- TARJETAS TITAN --- */
 .titan-card {
     background: var(--card-bg); 
     border-radius: 16px; 
@@ -162,7 +158,7 @@ div[data-testid="metric-container"]:hover {
     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 
-/* --- ESTILO PARA URGENCIA (NUEVO) --- */
+/* --- ETIQUETA ROJA DE URGENCIA --- */
 .urgency-badge {
     position: absolute; top: 12px; left: 12px; 
     background: rgba(239, 68, 68, 0.95);
@@ -225,32 +221,36 @@ def load_data():
         df = pd.read_csv(io.StringIO(r.content.decode('utf-8')))
         df.columns = [str(c).strip() for c in df.columns]
         df = df.dropna(subset=[df.columns[1]])
+        # Llenamos vacíos para evitar errores
+        df = df.fillna("")
         return df
     except Exception as e: return None
 
-# --- NUEVO ENFOQUE: VALIDACIÓN POR PATRÓN (MÁS SEGURO) ---
-def check_urgency(fecha_str):
+# --- FUNCION SEGURA DE URGENCIA ---
+def check_urgency(fecha_raw):
     """
-    Usa expresiones regulares (Regex) para ver si es una fecha REAL.
-    Si es texto ('No especificado', 'Pendiente'), devuelve False inmediatamente.
+    Comprueba si faltan 7 días o menos comparando con la fecha actual.
+    Maneja textos como 'No especificada' sin romper el código.
     """
-    texto = str(fecha_str).strip()
-    
-    # BUSCAMOS EL PATRÓN: 2 números / 2 números / 4 números (Ej: 30/12/2025)
-    patron_fecha = r'\d{1,2}/\d{1,2}/\d{4}'
-    
-    if re.search(patron_fecha, texto):
-        try:
-            # Si cumple el patrón, entonces intentamos calcular
-            fecha_obj = datetime.strptime(texto, '%d/%m/%Y')
-            dias_restantes = (fecha_obj - datetime.now()).days
-            
-            # Es urgente si quedan entre 0 y 7 días
-            return 0 <= dias_restantes <= 7
-        except:
+    try:
+        texto = str(fecha_raw).strip().lower()
+        
+        # 1. Si detecta texto no numérico, sale inmediatamente (FALSO)
+        if "no" in texto or "pend" in texto or "spec" in texto or len(texto) < 6:
             return False
-    else:
-        # Si NO cumple el patrón (es texto), NO hacemos nada.
+            
+        # 2. Intenta convertir la fecha (formato DD/MM/AAAA)
+        # Si falla aquí, salta al 'except' y no pasa nada malo
+        fecha_obj = datetime.strptime(texto, '%d/%m/%Y')
+        
+        # 3. Calcula diferencia
+        dias_restantes = (fecha_obj - datetime.now()).days
+        
+        # 4. Es urgente si está entre 0 (hoy) y 7 días
+        return 0 <= dias_restantes <= 7
+        
+    except:
+        # Si la fecha estaba mal escrita en el Excel, simplemente decimos que no es urgente
         return False
 
 def investigar_con_ia(titulo, link_boe):
@@ -276,8 +276,8 @@ def investigar_con_ia(titulo, link_boe):
 def clean_format(text):
     if not isinstance(text, str): return str(text)
     text = re.sub(r'#{1,6}\s?', '', text)
-    text = re.sub(r'**(.?)**', r'\1', text)
-    text = re.sub(r'*(.?)*', r'\1', text)
+    text = re.sub(r'\*\*(.*?)\*\*', r'\1', text)
+    text = re.sub(r'\*(.*?)\*', r'\1', text)
     replacements = {'—': '-', '–': '-', '“': '"', '”': '"', '’': "'", '‘': "'", '€': 'EUR', '•': '-', '…': '...', '🔍': '->', '⚠️': '(!)', '💡': '(IDEA)', '✅': '(SI)'}
     for k, v in replacements.items(): text = text.replace(k, v)
     return text.encode('latin-1', 'replace').decode('latin-1')
@@ -335,7 +335,6 @@ def get_tag_bg(tag):
 # ==============================================================================
 def get_img_url(sector, titulo):
     text_content = (str(sector) + " " + str(titulo)).lower()
-    # Eliminar tildes
     replacements = (("á", "a"), ("é", "e"), ("í", "i"), ("ó", "o"), ("ú", "u"), ("ü", "u"), ("ñ", "n"))
     for a, b in replacements:
         text_content = text_content.replace(a, b)
@@ -434,76 +433,80 @@ if check_password():
 
         st.markdown("---")
 
-        # --- GRID DE TARJETAS ---
+        # --- GRID DE TARJETAS (CON BUCLE PROTEGIDO) ---
         if total_ops == 0:
             st.info("⚠️ No hay resultados que coincidan con tus filtros.")
         else:
             cols = st.columns(2)
             for i, (index, row) in enumerate(filtered_df.iterrows()):
-                titulo = row.iloc[1]
-                sector = row.iloc[5]
-                tags_raw = str(row.iloc[2]).split('|')
-                tags_html = "".join([f"<span class='titan-tag' style='{get_tag_bg(t.strip())}'>{t.strip()}</span>" for t in tags_raw if t.strip()])
-                cuantia = row.iloc[3]
-                plazo = row.iloc[4]
-                probabilidad = str(row.iloc[9]).strip().upper()
-                analisis_ia = row.iloc[6]
-                requisitos_txt = row.iloc[8]
-                link_boe = str(row.iloc[0])
-                img_url = get_img_url(sector, titulo)
-                
-                badge_border = "rgba(16, 185, 129, 0.5)" if "ALTA" in probabilidad else ("rgba(245, 158, 11, 0.5)" if "MEDIA" in probabilidad else "rgba(148, 163, 184, 0.5)")
-                
-                # --- AQUÍ APLICAMOS LA LÓGICA DE URGENCIA SEGURA ---
-                is_urgent = check_urgency(plazo)
-                urgency_html = "<div class='urgency-badge'>🚨 CIERRE INMINENTE</div>" if is_urgent else ""
-                
-                # HTML DE LA TARJETA
-                card_html = f"""
-                <div class="titan-card">
-                    <div class="card-img-container">
-                        <img src="{img_url}" class="card-img">
-                        <div class="card-overlay"></div>
-                        {urgency_html}
-                        <div class="card-badge" style="border-color:{badge_border};">● {probabilidad}</div>
-                    </div>
-                    <div class="card-body">
-                        <div>
-                            <div class="card-title" title="{titulo}">{titulo}</div>
-                            <div style="margin-bottom:10px;">{tags_html}</div>
-                        </div>
-                        <div class="specs-grid">
-                            <div class="spec-item"><span class="spec-label">Cuantía Disp.</span><span class="spec-value">{cuantia}</span></div>
-                            <div class="spec-item"><span class="spec-label">Cierre</span><span class="spec-value" style="{'color:#ef4444' if is_urgent else ''}">{plazo}</span></div>
-                        </div>
-                    </div>
-                </div>
-                """
-                with cols[i % 2]:
-                    st.markdown(card_html, unsafe_allow_html=True)
+                # PROTECCIÓN TOTAL: Si una fila falla, se salta y sigue la siguiente
+                try:
+                    titulo = row.iloc[1]
+                    sector = row.iloc[5]
+                    tags_raw = str(row.iloc[2]).split('|')
+                    tags_html = "".join([f"<span class='titan-tag' style='{get_tag_bg(t.strip())}'>{t.strip()}</span>" for t in tags_raw if t.strip()])
+                    cuantia = row.iloc[3]
+                    plazo = row.iloc[4]
+                    probabilidad = str(row.iloc[9]).strip().upper()
+                    analisis_ia = row.iloc[6]
+                    requisitos_txt = row.iloc[8]
+                    link_boe = str(row.iloc[0])
+                    img_url = get_img_url(sector, titulo)
                     
-                    with st.expander("🔬 INVESTIGACIÓN PROFUNDA & PDF"):
-                        key_investigacion = f"investigacion_{index}"
-                        if key_investigacion not in st.session_state:
-                            st.info("💡 Pulsa para analizar las Bases Oficiales en tiempo real.")
-                            if st.button("🔍 BUSCAR BASES REALES", key=f"ai_btn_{index}", use_container_width=True):
-                                with st.spinner("⏳ TITAN AI leyendo el BOE y extrayendo datos clave..."):
-                                    res_profundo = investigar_con_ia(titulo, link_boe)
-                                    st.session_state[key_investigacion] = res_profundo
-                                    st.rerun() 
-                        else:
-                            st.success("✅ Auditoría Completada")
-                            st.markdown(f"<div style='font-size:0.9rem; color:#475569'>{st.session_state[key_investigacion]}</div>", unsafe_allow_html=True)
-                            pdf_data = generar_pdf(titulo, analisis_ia, requisitos_txt, st.session_state[key_investigacion])
-                            st.download_button(label="📥 DESCARGAR INFORME PDF OFICIAL", data=pdf_data, file_name=f"Informe_Titan_{index}.pdf", mime="application/pdf", use_container_width=True, key=f"pdf_btn_{index}")
+                    badge_border = "rgba(16, 185, 129, 0.5)" if "ALTA" in probabilidad else ("rgba(245, 158, 11, 0.5)" if "MEDIA" in probabilidad else "rgba(148, 163, 184, 0.5)")
+                    
+                    # LOGICA URGENCIA SEGURA
+                    is_urgent = check_urgency(plazo)
+                    urgency_html = "<div class='urgency-badge'>🚨 CIERRE INMINENTE</div>" if is_urgent else ""
 
-                    with st.expander("🔻 ANÁLISIS PREVIO", expanded=False):
-                        st.markdown(f"""<div style='background:var(--bg-app); padding:15px; border-radius:8px; border-left:3px solid var(--accent); color:var(--text-secondary);'>
-                            <h4 style='margin-top:0; color:var(--accent); font-size:0.9rem;'>🧠 SÍNTESIS INTELIGENTE</h4>{analisis_ia}</div>""", unsafe_allow_html=True)
-                        st.markdown("#### 📋 Requisitos")
-                        st.caption(str(requisitos_txt)[:300] + "...") 
-                        c_btn1, c_btn2 = st.columns([1,1])
-                        with c_btn1: st.link_button("📄 VER BOE", link_boe, use_container_width=True)
-                        with c_btn2: st.button("⭐ SEGUIR", key=f"fav_{index}", use_container_width=True)
-                    st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
+                    card_html = f"""
+                    <div class="titan-card">
+                        <div class="card-img-container">
+                            <img src="{img_url}" class="card-img">
+                            <div class="card-overlay"></div>
+                            {urgency_html}
+                            <div class="card-badge" style="border-color:{badge_border};">● {probabilidad}</div>
+                        </div>
+                        <div class="card-body">
+                            <div>
+                                <div class="card-title" title="{titulo}">{titulo}</div>
+                                <div style="margin-bottom:10px;">{tags_html}</div>
+                            </div>
+                            <div class="specs-grid">
+                                <div class="spec-item"><span class="spec-label">Cuantía Disp.</span><span class="spec-value">{cuantia}</span></div>
+                                <div class="spec-item"><span class="spec-label">Cierre</span><span class="spec-value" style="{'color:#ef4444' if is_urgent else ''}">{plazo}</span></div>
+                            </div>
+                        </div>
+                    </div>
+                    """
+                    with cols[i % 2]:
+                        st.markdown(card_html, unsafe_allow_html=True)
+                        
+                        with st.expander("🔬 INVESTIGACIÓN PROFUNDA & PDF"):
+                            key_investigacion = f"investigacion_{index}"
+                            if key_investigacion not in st.session_state:
+                                st.info("💡 Pulsa para analizar las Bases Oficiales en tiempo real.")
+                                if st.button("🔍 BUSCAR BASES REALES", key=f"ai_btn_{index}", use_container_width=True):
+                                    with st.spinner("⏳ TITAN AI leyendo el BOE y extrayendo datos clave..."):
+                                        res_profundo = investigar_con_ia(titulo, link_boe)
+                                        st.session_state[key_investigacion] = res_profundo
+                                        st.rerun() 
+                            else:
+                                st.success("✅ Auditoría Completada")
+                                st.markdown(f"<div style='font-size:0.9rem; color:#475569'>{st.session_state[key_investigacion]}</div>", unsafe_allow_html=True)
+                                pdf_data = generar_pdf(titulo, analisis_ia, requisitos_txt, st.session_state[key_investigacion])
+                                st.download_button(label="📥 DESCARGAR INFORME PDF OFICIAL", data=pdf_data, file_name=f"Informe_Titan_{index}.pdf", mime="application/pdf", use_container_width=True, key=f"pdf_btn_{index}")
+
+                        with st.expander("🔻 ANÁLISIS PREVIO", expanded=False):
+                            st.markdown(f"""<div style='background:var(--bg-app); padding:15px; border-radius:8px; border-left:3px solid var(--accent); color:var(--text-secondary);'>
+                                <h4 style='margin-top:0; color:var(--accent); font-size:0.9rem;'>🧠 SÍNTESIS INTELIGENTE</h4>{analisis_ia}</div>""", unsafe_allow_html=True)
+                            st.markdown("#### 📋 Requisitos")
+                            st.caption(str(requisitos_txt)[:300] + "...") 
+                            c_btn1, c_btn2 = st.columns([1,1])
+                            with c_btn1: st.link_button("📄 VER BOE", link_boe, use_container_width=True)
+                            with c_btn2: st.button("⭐ SEGUIR", key=f"fav_{index}", use_container_width=True)
+                        st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
+                except Exception as e:
+                    # Si algo falla en una tarjeta, la saltamos y mostramos el resto (CRUCIAL)
+                    continue
     else: st.error("DATABASE ERROR")
