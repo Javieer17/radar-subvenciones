@@ -6,7 +6,7 @@ import plotly.express as px
 import time
 import re
 import os
-from datetime import datetime
+from datetime import datetime # IMPORTANTE: Necesario para calcular los días
 from groq import Groq
 from tavily import TavilyClient
 from fpdf import FPDF
@@ -43,7 +43,6 @@ st.markdown("""
         --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
         --metric-bg: rgba(255, 255, 255, 0.7);
         --input-bg: #ffffff;
-        --urgency-color: #ef4444;
     }
 
     @media (prefers-color-scheme: dark) {
@@ -166,7 +165,7 @@ st.markdown("""
         box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
 
-    /* --- ALERTA DE URGENCIA (NUEVO) --- */
+    /* --- NUEVO: ALERTA DE URGENCIA (Parpadeo) --- */
     .urgency-badge {
         position: absolute; top: 12px; left: 12px; 
         background: rgba(239, 68, 68, 0.95);
@@ -229,22 +228,17 @@ def load_data():
         df = pd.read_csv(io.StringIO(r.content.decode('utf-8')))
         df.columns = [str(c).strip() for c in df.columns]
         df = df.dropna(subset=[df.columns[1]]) 
-        
-        # IMPORTANTE: Para evitar que falle si la columna no existe aún
-        if 'Beneficiario' not in df.columns:
-            df['Beneficiario'] = 'General'
-            
         return df
     except Exception as e: return None
 
-# --- NUEVA FUNCIÓN DE URGENCIA ---
+# --- NUEVA FUNCIÓN DE URGENCIA (SEGURA PARA NO ROMPER EL BUCLE) ---
 def check_urgency(fecha_str):
-    """Devuelve True si faltan 7 días o menos"""
     try:
-        # Intenta parsear DD/MM/AAAA
+        # Intenta parsear DD/MM/AAAA. Si la fecha es "No definida", falla silenciosamente y devuelve False.
         fecha_obj = datetime.strptime(str(fecha_str).strip(), '%d/%m/%Y')
         dias_restantes = (fecha_obj - datetime.now()).days
-        return dias_restantes <= 7 and dias_restantes >= -1 # Incluimos hoy y ayer por si acaso
+        # Si faltan 7 días o menos (y no ha pasado más de 1 día del cierre)
+        return dias_restantes <= 7 and dias_restantes >= -1 
     except:
         return False
 
@@ -326,10 +320,10 @@ def get_tag_bg(tag):
     return "background: #475569;"
 
 # ==============================================================================
-#  IMÁGENES INTELIGENTES (CON ORDEN DE PRIORIDAD CORRECTO Y ANIMALES)
+#  IMÁGENES ACTUALIZADAS CON TU BARCO, ANIMALES Y SIN TILDES
 # ==============================================================================
 def get_img_url(sector, titulo):
-    # 1. Limpieza de texto y tildes
+    # 1. Limpieza de texto y tildes (Para que no falle al buscar)
     text_content = (str(sector) + " " + str(titulo)).lower()
     replacements = (("á", "a"), ("é", "e"), ("í", "i"), ("ó", "o"), ("ú", "u"), ("ü", "u"), ("ñ", "n"))
     for a, b in replacements:
@@ -337,14 +331,17 @@ def get_img_url(sector, titulo):
     
     base_params = "?auto=format&fit=crop&w=800&q=80"
     
-    # 1. ANIMALES / PROTECTORAS (NUEVO - PRIORIDAD MÁXIMA)
+    # --- 1. ANIMALES / PROTECTORAS (NUEVO) ---
     if any(x in text_content for x in ['animal', 'protectora', 'perro', 'gato', 'mascota', 'veterinari', 'fauna', 'especie']): 
         return f"https://images.unsplash.com/photo-1548767797-d8c844163c4c{base_params}"
 
     # 2. EMERGENCIAS / DANA
     if any(x in text_content for x in ['dana', 'catastrofe', 'emergencia', 'inundaci']): return f"https://images.unsplash.com/photo-1639164631388-857f29935861{base_params}"
-    # 3. MARITIMO / NAVAL
-    if any(x in text_content for x in ['maritimo', 'naval', 'barco', 'puerto', 'portuari', 'mercancia', 'transporte maritimo']): return f"https://images.unsplash.com/photo-1606185540834-d6e7483ee1a4{base_params}"
+    
+    # 3. MARITIMO / NAVAL (TU FOTO DEL BARCO CON ID DIRECTA)
+    if any(x in text_content for x in ['maritimo', 'naval', 'barco', 'puerto', 'portuari', 'mercancia', 'transporte maritimo']): 
+        return f"https://images.unsplash.com/photo-1606185540834-d6e7483ee1a4{base_params}"
+        
     # 4. OBRAS CIVILES
     if any(x in text_content for x in ['paviment', 'calle', 'asfalt', 'urbaniz', 'pluvial', 'saneamiento', 'alcantarillado', 'abastecimiento', 'obras de']): return f"https://images.unsplash.com/photo-1621255558983-0498b98b76c1{base_params}"
     # 5. CULTURA
@@ -389,24 +386,13 @@ if check_password():
             if os.path.exists(LOGO_FILE): st.image(LOGO_FILE, use_container_width=True)
             st.markdown("### 🎛️ FILTROS")
             st.markdown("---")
-            
             query = st.text_input("Búsqueda Textual", placeholder="Ej: Digitalización...", key="search_bar")
-            
-            # FILTRO CASCADA (SIN FALLOS)
-            tipos_beneficiarios = sorted(df['Beneficiario'].astype(str).unique())
-            sel_tipo = st.multiselect("Tipo de Beneficiario", tipos_beneficiarios)
-            
-            df_filtered_step1 = df.copy()
-            if sel_tipo:
-                df_filtered_step1 = df[df['Beneficiario'].isin(sel_tipo)]
-            
-            sectores_disponibles = sorted(df_filtered_step1.iloc[:, 5].astype(str).unique())
-            sel_sector = st.multiselect("Sector Estratégico", sectores_disponibles)
-            
+            sectores_unicos = sorted(df.iloc[:, 5].astype(str).unique())
             probs_unicas = sorted(df.iloc[:, 9].astype(str).unique())
+            sel_sector = st.multiselect("Sector Estratégico", sectores_unicos)
             sel_prob = st.multiselect("Probabilidad de Éxito", probs_unicas)
             
-            filtered_df = df_filtered_step1.copy()
+            filtered_df = df.copy()
             if query: filtered_df = filtered_df[filtered_df.apply(lambda r: r.astype(str).str.contains(query, case=False).any(), axis=1)]
             if sel_sector: filtered_df = filtered_df[filtered_df.iloc[:, 5].astype(str).isin(sel_sector)]
             if sel_prob: filtered_df = filtered_df[filtered_df.iloc[:, 9].astype(str).isin(sel_prob)]
@@ -454,76 +440,70 @@ if check_password():
             st.info("⚠️ No hay resultados que coincidan con tus filtros.")
         else:
             cols = st.columns(2)
-            # --- BUCLE BLINDADO (TRY-EXCEPT) PARA QUE NO SE ROMPA LA WEB ---
             for i, (index, row) in enumerate(filtered_df.iterrows()):
-                try:
-                    titulo = row.iloc[1]
-                    sector = row.iloc[5]
-                    tags_raw = str(row.iloc[2]).split('|')
-                    tags_html = "".join([f"<span class='titan-tag' style='{get_tag_bg(t.strip())}'>{t.strip()}</span>" for t in tags_raw if t.strip()])
-                    cuantia = row.iloc[3]
-                    plazo = row.iloc[4]
-                    probabilidad = str(row.iloc[9]).strip().upper()
-                    analisis_ia = row.iloc[6]
-                    requisitos_txt = row.iloc[8]
-                    link_boe = str(row.iloc[0])
-                    img_url = get_img_url(sector, titulo)
-                    
-                    badge_border = "rgba(16, 185, 129, 0.5)" if "ALTA" in probabilidad else ("rgba(245, 158, 11, 0.5)" if "MEDIA" in probabilidad else "rgba(148, 163, 184, 0.5)")
-                    
-                    # ALERTA URGENCIA
-                    is_urgent = check_urgency(plazo)
-                    urgency_html = "<div class='urgency-badge'>🚨 CIERRE INMINENTE</div>" if is_urgent else ""
+                titulo = row.iloc[1]
+                sector = row.iloc[5]
+                tags_raw = str(row.iloc[2]).split('|')
+                tags_html = "".join([f"<span class='titan-tag' style='{get_tag_bg(t.strip())}'>{t.strip()}</span>" for t in tags_raw if t.strip()])
+                cuantia = row.iloc[3]
+                plazo = row.iloc[4]
+                probabilidad = str(row.iloc[9]).strip().upper()
+                analisis_ia = row.iloc[6]
+                requisitos_txt = row.iloc[8]
+                link_boe = str(row.iloc[0])
+                img_url = get_img_url(sector, titulo)
+                
+                badge_border = "rgba(16, 185, 129, 0.5)" if "ALTA" in probabilidad else ("rgba(245, 158, 11, 0.5)" if "MEDIA" in probabilidad else "rgba(148, 163, 184, 0.5)")
+                
+                # --- CHECK DE URGENCIA (NUEVO) ---
+                is_urgent = check_urgency(plazo)
+                urgency_html = "<div class='urgency-badge'>🚨 CIERRE INMINENTE</div>" if is_urgent else ""
 
-                    card_html = f"""
-                    <div class="titan-card">
-                        <div class="card-img-container">
-                            <img src="{img_url}" class="card-img">
-                            <div class="card-overlay"></div>
-                            {urgency_html}
-                            <div class="card-badge" style="border-color:{badge_border};">● {probabilidad}</div>
+                card_html = f"""
+                <div class="titan-card">
+                    <div class="card-img-container">
+                        <img src="{img_url}" class="card-img">
+                        <div class="card-overlay"></div>
+                        {urgency_html}
+                        <div class="card-badge" style="border-color:{badge_border};">● {probabilidad}</div>
+                    </div>
+                    <div class="card-body">
+                        <div>
+                            <div class="card-title" title="{titulo}">{titulo}</div>
+                            <div style="margin-bottom:10px;">{tags_html}</div>
                         </div>
-                        <div class="card-body">
-                            <div>
-                                <div class="card-title" title="{titulo}">{titulo}</div>
-                                <div style="margin-bottom:10px;">{tags_html}</div>
-                            </div>
-                            <div class="specs-grid">
-                                <div class="spec-item"><span class="spec-label">Cuantía Disp.</span><span class="spec-value">{cuantia}</span></div>
-                                <div class="spec-item"><span class="spec-label">Cierre</span><span class="spec-value" style="{'color:#ef4444' if is_urgent else ''}">{plazo}</span></div>
-                            </div>
+                        <div class="specs-grid">
+                            <div class="spec-item"><span class="spec-label">Cuantía Disp.</span><span class="spec-value">{cuantia}</span></div>
+                            <div class="spec-item"><span class="spec-label">Cierre</span><span class="spec-value" style="{'color:#ef4444' if is_urgent else ''}">{plazo}</span></div>
                         </div>
                     </div>
-                    """
-                    with cols[i % 2]:
-                        st.markdown(card_html, unsafe_allow_html=True)
-                        
-                        with st.expander("🔬 INVESTIGACIÓN PROFUNDA & PDF"):
-                            key_investigacion = f"investigacion_{index}"
-                            if key_investigacion not in st.session_state:
-                                st.info("💡 Pulsa para analizar las Bases Oficiales en tiempo real.")
-                                if st.button("🔍 BUSCAR BASES REALES", key=f"ai_btn_{index}", use_container_width=True):
-                                    with st.spinner("⏳ TITAN AI leyendo el BOE y extrayendo datos clave..."):
-                                        res_profundo = investigar_con_ia(titulo, link_boe)
-                                        st.session_state[key_investigacion] = res_profundo
-                                        st.rerun() 
-                            else:
-                                st.success("✅ Auditoría Completada")
-                                st.markdown(f"<div style='font-size:0.9rem; color:#475569'>{st.session_state[key_investigacion]}</div>", unsafe_allow_html=True)
-                                pdf_data = generar_pdf(titulo, analisis_ia, requisitos_txt, st.session_state[key_investigacion])
-                                st.download_button(label="📥 DESCARGAR INFORME PDF OFICIAL", data=pdf_data, file_name=f"Informe_Titan_{index}.pdf", mime="application/pdf", use_container_width=True, key=f"pdf_btn_{index}")
+                </div>
+                """
+                with cols[i % 2]:
+                    st.markdown(card_html, unsafe_allow_html=True)
+                    
+                    with st.expander("🔬 INVESTIGACIÓN PROFUNDA & PDF"):
+                        key_investigacion = f"investigacion_{index}"
+                        if key_investigacion not in st.session_state:
+                            st.info("💡 Pulsa para analizar las Bases Oficiales en tiempo real.")
+                            if st.button("🔍 BUSCAR BASES REALES", key=f"ai_btn_{index}", use_container_width=True):
+                                with st.spinner("⏳ TITAN AI leyendo el BOE y extrayendo datos clave..."):
+                                    res_profundo = investigar_con_ia(titulo, link_boe)
+                                    st.session_state[key_investigacion] = res_profundo
+                                    st.rerun() 
+                        else:
+                            st.success("✅ Auditoría Completada")
+                            st.markdown(f"<div style='font-size:0.9rem; color:#475569'>{st.session_state[key_investigacion]}</div>", unsafe_allow_html=True)
+                            pdf_data = generar_pdf(titulo, analisis_ia, requisitos_txt, st.session_state[key_investigacion])
+                            st.download_button(label="📥 DESCARGAR INFORME PDF OFICIAL", data=pdf_data, file_name=f"Informe_Titan_{index}.pdf", mime="application/pdf", use_container_width=True, key=f"pdf_btn_{index}")
 
-                        with st.expander("🔻 ANÁLISIS PREVIO", expanded=False):
-                            st.markdown(f"""<div style='background:var(--bg-app); padding:15px; border-radius:8px; border-left:3px solid var(--accent); color:var(--text-secondary);'>
-                                <h4 style='margin-top:0; color:var(--accent); font-size:0.9rem;'>🧠 SÍNTESIS INTELIGENTE</h4>{analisis_ia}</div>""", unsafe_allow_html=True)
-                            st.markdown("#### 📋 Requisitos")
-                            st.caption(str(requisitos_txt)[:300] + "...") 
-                            c_btn1, c_btn2 = st.columns([1,1])
-                            with c_btn1: st.link_button("📄 VER BOE", link_boe, use_container_width=True)
-                            with c_btn2: st.button("⭐ SEGUIR", key=f"fav_{index}", use_container_width=True)
-                        st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
-                
-                except Exception as e:
-                    # Si falla una fila, la ignoramos y seguimos (NO ROMPEMOS LA WEB)
-                    continue
+                    with st.expander("🔻 ANÁLISIS PREVIO", expanded=False):
+                        st.markdown(f"""<div style='background:var(--bg-app); padding:15px; border-radius:8px; border-left:3px solid var(--accent); color:var(--text-secondary);'>
+                            <h4 style='margin-top:0; color:var(--accent); font-size:0.9rem;'>🧠 SÍNTESIS INTELIGENTE</h4>{analisis_ia}</div>""", unsafe_allow_html=True)
+                        st.markdown("#### 📋 Requisitos")
+                        st.caption(str(requisitos_txt)[:300] + "...") 
+                        c_btn1, c_btn2 = st.columns([1,1])
+                        with c_btn1: st.link_button("📄 VER BOE", link_boe, use_container_width=True)
+                        with c_btn2: st.button("⭐ SEGUIR", key=f"fav_{index}", use_container_width=True)
+                    st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
     else: st.error("DATABASE ERROR")
