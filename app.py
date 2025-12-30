@@ -28,7 +28,7 @@ st.set_page_config(
 st.markdown("""
     <style>
     /* IMPORTACIÓN DE FUENTES */
-    @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Outfit:wght@300;400;700;900&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700;800&family=Outfit:wght@300;400;700;900&display=swap');
 
     /* --- VARIABLES DE COLORES --- */
     :root {
@@ -69,12 +69,40 @@ st.markdown("""
         font-size: 3rem; font-weight: 900; margin-bottom: 0px;
     }
 
+    /* --- ESTILOS DE KPIS (RESTAURADOS Y MEJORADOS) --- */
     div[data-testid="metric-container"] {
-        background-color: var(--metric-bg); border: 1px solid var(--card-border);
-        padding: 15px 20px; border-radius: 12px; backdrop-filter: blur(10px);
+        background-color: var(--metric-bg); 
+        border: 1px solid var(--card-border);
+        padding: 15px 20px; 
+        border-radius: 12px; 
+        backdrop-filter: blur(10px);
         box-shadow: var(--shadow-card);
+        transition: all 0.3s ease;
+    }
+    div[data-testid="metric-container"]:hover { 
+        border-color: var(--accent); 
+        transform: translateY(-2px); 
+        box-shadow: 0 8px 20px rgba(0,0,0,0.1);
     }
     
+    /* El número grande con degradado */
+    [data-testid="stMetricValue"] { 
+        font-family: 'Rajdhani', sans-serif !important; 
+        font-size: 2.5rem !important;
+        font-weight: 800 !important;
+        background: -webkit-linear-gradient(45deg, var(--accent), var(--primary-btn));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    /* La etiqueta pequeña */
+    [data-testid="stMetricLabel"] { 
+        color: var(--text-secondary) !important; 
+        font-weight: 600 !important;
+        font-size: 0.9rem !important;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
     /* --- TARJETAS TITAN --- */
     .titan-card {
         background: var(--card-bg); 
@@ -90,20 +118,22 @@ st.markdown("""
     }
     .titan-card:hover { transform: translateY(-8px); box-shadow: 0 20px 40px -5px rgba(0,0,0,0.15); border-color: var(--primary-btn); }
 
-    /* --- CONTENEDOR DE IMAGEN (SOLUCIÓN DE AJUSTE) --- */
+    /* --- CONTENEDOR DE IMAGEN (ARREGLADO AJUSTE) --- */
     .card-img-container { 
         position: relative; 
         height: 180px; 
-        width: 100%;
+        width: 100%; /* Forzar ancho completo */
         overflow: hidden;
-        background-color: #1e293b; /* Fondo oscuro por si falla la carga */
+        background-color: #0f172a; /* Fondo oscuro base */
+        border-bottom: 1px solid var(--card-border);
     }
     
     .card-img { 
-        width: 100%; 
-        height: 100%; 
-        object-fit: cover; 
+        width: 100% !important; /* CRUCIAL: Ocupar todo el ancho */
+        height: 100% !important; /* CRUCIAL: Ocupar todo el alto */
+        object-fit: cover !important; /* CRUCIAL: Recortar sin deformar */
         object-position: center;
+        display: block;
         transition: transform 0.5s ease; 
         filter: brightness(0.9); 
     }
@@ -115,23 +145,23 @@ st.markdown("""
         pointer-events: none;
     }
 
-    /* --- BURBUJA (BADGE) CORREGIDA --- */
+    /* --- BURBUJA (BADGE) --- */
     .card-badge {
         position: absolute; 
         top: 12px; 
         right: 12px; 
-        background: rgba(15, 23, 42, 0.75); /* Fondo oscuro sólido pero transparente */
-        backdrop-filter: blur(6px); 
-        -webkit-backdrop-filter: blur(6px);
+        background: rgba(15, 23, 42, 0.8); /* Más opaco para leerse mejor */
+        backdrop-filter: blur(8px); 
+        -webkit-backdrop-filter: blur(8px);
         color: #ffffff !important; 
-        padding: 4px 10px;
+        padding: 5px 12px;
         border-radius: 8px; 
-        font-size: 0.65rem; 
+        font-size: 0.7rem; 
         font-family: 'Rajdhani', sans-serif; 
         font-weight: 800;
         text-transform: uppercase;
         letter-spacing: 1px;
-        border: 1px solid rgba(255, 255, 255, 0.2); 
+        border: 1px solid rgba(255, 255, 255, 0.15); 
         z-index: 20; 
         box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
@@ -139,8 +169,8 @@ st.markdown("""
     .card-body { padding: 20px; position: relative; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
     
     .card-title {
-        color: var(--text-primary); font-weight: 800; font-size: 1.1rem; line-height: 1.3;
-        margin-bottom: 12px; min-height: 2.8rem; display: -webkit-box; -webkit-line-clamp: 2;
+        color: var(--text-primary); font-weight: 800; font-size: 1.15rem; line-height: 1.3;
+        margin-bottom: 12px; min-height: 3rem; display: -webkit-box; -webkit-line-clamp: 2;
         -webkit-box-orient: vertical; overflow: hidden;
     }
 
@@ -412,13 +442,12 @@ if check_password():
                 # Definir color del borde de la burbuja según probabilidad
                 badge_border = "rgba(16, 185, 129, 0.5)" if "ALTA" in probabilidad else ("rgba(245, 158, 11, 0.5)" if "MEDIA" in probabilidad else "rgba(148, 163, 184, 0.5)")
                 
-                # HTML DE LA TARJETA (MODIFICADO: BURBUJA DENTRO DE LA IMAGEN)
+                # HTML DE LA TARJETA
                 card_html = f"""
                 <div class="titan-card">
                     <div class="card-img-container">
                         <img src="{img_url}" class="card-img">
                         <div class="card-overlay"></div>
-                        <!-- LA BURBUJA ESTÁ AHORA AQUÍ DENTRO PARA ALINEARSE BIEN -->
                         <div class="card-badge" style="border-color:{badge_border};">● {probabilidad}</div>
                     </div>
                     <div class="card-body">
