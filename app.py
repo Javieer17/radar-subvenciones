@@ -24,7 +24,7 @@ st.set_page_config(
 )
 
 # ==============================================================================
-# 2. CSS DINÁMICO (TITAN ADAPTIVE THEME) - INTACTO
+# 2. CSS DINÁMICO (TITAN ADAPTIVE THEME)
 # ==============================================================================
 st.markdown("""
     <style>
@@ -86,18 +86,48 @@ st.markdown("""
     }
     .titan-card:hover { transform: translateY(-8px); box-shadow: 0 20px 40px -5px rgba(0,0,0,0.15); border-color: var(--primary-btn); }
 
-    .card-img-container { position: relative; height: 180px; overflow: hidden; }
-    .card-img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease; filter: brightness(0.95); }
+    /* --- INICIO ZONA MODIFICADA (IMAGEN Y BURBUJA) --- */
+    .card-img-container { 
+        position: relative; 
+        height: 180px; 
+        overflow: hidden;
+        border-radius: 16px 16px 0 0; /* Asegura esquinas redondeadas arriba */
+    }
+    .card-img { 
+        width: 100%; 
+        height: 100%; 
+        object-fit: cover; 
+        transition: transform 0.5s ease; 
+        filter: brightness(0.95); 
+    }
     .titan-card:hover .card-img { transform: scale(1.1); filter: brightness(1.05); }
 
-    .card-overlay { position: absolute; bottom: 0; left: 0; right: 0; height: 80px; background: linear-gradient(to top, var(--card-bg), transparent); }
+    .card-overlay { 
+        position: absolute; bottom: 0; left: 0; right: 0; height: 80px; 
+        background: linear-gradient(to top, var(--card-bg), transparent); 
+        pointer-events: none;
+    }
 
     .card-badge {
-        position: absolute; top: 12px; right: 12px; background: var(--metric-bg);
-        backdrop-filter: blur(4px); color: var(--text-primary); padding: 4px 10px;
-        border-radius: 20px; font-size: 0.75rem; font-family: 'Rajdhani', sans-serif; font-weight: 700;
-        border: 1px solid var(--card-border); z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        position: absolute; 
+        top: 15px; 
+        right: 15px; 
+        /* FONDO GLASSMORPHISM OSCURO */
+        background: rgba(15, 23, 42, 0.65);
+        backdrop-filter: blur(8px); 
+        -webkit-backdrop-filter: blur(8px);
+        color: #ffffff !important; 
+        padding: 5px 12px;
+        border-radius: 12px; 
+        font-size: 0.7rem; 
+        font-family: 'Rajdhani', sans-serif; 
+        font-weight: 700;
+        border: 1px solid rgba(255,255,255,0.15); 
+        z-index: 10; 
+        box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        letter-spacing: 0.5px;
     }
+    /* --- FIN ZONA MODIFICADA --- */
 
     .card-body { padding: 20px; position: relative; }
     .card-title {
@@ -265,74 +295,73 @@ def get_tag_bg(tag):
     if "prestamo" in t: return "background: linear-gradient(90deg, #d97706, #b45309);"
     if "bonif" in t: return "background: linear-gradient(90deg, #7c3aed, #6d28d9);"
     return "background: #475569;"
+
 # ==============================================================================
-#  IMAGENES
+#  IMAGENES INTELIGENTES (LÓGICA MEJORADA)
 # ==============================================================================
 def get_img_url(sector, titulo):
-    # Convertimos todo a minúsculas para buscar palabras clave
-    c = (str(sector) + " " + str(titulo)).lower()
+    # Convertimos todo a minúsculas para analizar el texto
+    text_content = (str(sector) + " " + str(titulo)).lower()
     
-    # --- 1. SECTOR EÓLICO (TU CAMBIO) ---
-    # He puesto tu enlace de Unsplash. Fíjate que al final pongo w=800 para que no pese mucho.
-    if any(x in c for x in ['eolic', 'viento', 'wind']): 
+    # --- DICCIONARIO DE IMÁGENES (Prioridad Alta a Baja) ---
+    # NOTA: Todas llevan '&w=800&fit=crop' para optimizar carga y encuadre
+    
+    # 1. EMERGENCIAS / DANA (Prioridad Máxima)
+    if any(x in text_content for x in ['dana', 'catastrofe', 'emergencia', 'inundaci']): 
+        return "https://images.unsplash.com/photo-1585672850976-1f31f9486c8f?auto=format&fit=crop&w=800&q=80"
+
+    # 2. MOVILIDAD ELÉCTRICA (MOVES, Coches)
+    if any(x in text_content for x in ['moves', 'coche', 'vehiculo', 'puntos de recarga', 'automocion', 'transporte']): 
+        return "https://images.unsplash.com/photo-1593941707882-a5bba14938c7?auto=format&fit=crop&w=800&q=80"
+
+    # 3. ENERGÍA EÓLICA (Tu foto solicitada)
+    if any(x in text_content for x in ['eolic', 'viento', 'aerogenerador', 'wind']): 
         return "https://images.unsplash.com/photo-1548337138-e87d889cc369?auto=format&fit=crop&w=800&q=80"
 
-    # --- 2. EMERGENCIAS / DANA ---
-    if any(x in c for x in ['dana', 'emergencia', 'catastrofe']): 
-        return "https://images.unsplash.com/photo-1628135804791-c0a6b490f898?auto=format&fit=crop&w=800&q=80"
-
-    # --- 3. SOLAR / FOTOVOLTAICA ---
-    if any(x in c for x in ['solar', 'fotov', 'renovab']): 
+    # 4. ENERGÍA SOLAR / FOTOVOLTAICA
+    if any(x in text_content for x in ['solar', 'fotov', 'placas']): 
         return "https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&w=800&q=80"
 
-    # --- 4. INDUSTRIA ---
-    if any(x in c for x in ['indust', 'fabrica', 'maq']): 
-        return "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=80"
+    # 5. HIDROELÉCTRICA / AGUA
+    if any(x in text_content for x in ['hidro', 'agua', 'embalse', 'riego']): 
+        return "https://images.unsplash.com/photo-1583306346296-6e7e44d852a4?auto=format&fit=crop&w=800&q=80"
 
-    # --- 5. TECNOLOGÍA / DIGITAL ---
-    if any(x in c for x in ['tech', 'digital', 'ia ', 'software', 'tic']): 
+    # 6. INDUSTRIA / FÁBRICAS
+    if any(x in text_content for x in ['indust', 'manufac', 'fabrica', 'maquina', 'cadena de valor']): 
+        return "https://images.unsplash.com/photo-1565514020126-db9f96b9b3df?auto=format&fit=crop&w=800&q=80"
+
+    # 7. SALUD / INVESTIGACIÓN / BIOTEC
+    if any(x in text_content for x in ['salud', 'farma', 'medic', 'hospital', 'sanitar', 'investig']): 
+        return "https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&w=800&q=80"
+
+    # 8. ARQUITECTURA / VIVIENDA / CONSTRUCCIÓN
+    if any(x in text_content for x in ['arqui', 'vivienda', 'edific', 'rehabilit', 'urban']): 
+        return "https://images.unsplash.com/photo-1486325212027-8081e485255e?auto=format&fit=crop&w=800&q=80"
+
+    # 9. EDUCACIÓN / UNIVERSIDAD / LECTORADOS
+    if any(x in text_content for x in ['educa', 'formaci', 'universidad', 'beca', 'lector']): 
+        return "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=800&q=80"
+
+    # 10. DIGITAL / IA / SOFTWARE
+    if any(x in text_content for x in ['digital', 'ia ', 'softw', 'tic', 'cyber', 'ciber']): 
         return "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80"
 
-    # --- 6. AGROALIMENTARIO ---
-    if any(x in c for x in ['agro', 'campo', 'ganad', 'pesca']): 
+    # 11. AGRO / CAMPO / MARÍTIMO
+    if any(x in text_content for x in ['mar', 'naval', 'barco']): 
+        return "https://images.unsplash.com/photo-1598194501777-edbff942e501?auto=format&fit=crop&w=800&q=80"
+    if any(x in text_content for x in ['agro', 'campo', 'forest', 'ganad', 'rural']): 
         return "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?auto=format&fit=crop&w=800&q=80"
 
-    # --- 7. AUTOMOCIÓN / TRANSPORTE ---
-    if any(x in c for x in ['auto', 'movil', 'transp', 'vehiculo']): 
-        return "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&w=800&q=80"
-
-    # --- 8. I+D+i / CIENCIA ---
-    if any(x in c for x in ['invest', 'ciencia', 'idi', 'biotec']): 
-        return "https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=800&q=80"
-        
-    # =================================================================
-    # --- NUEVOS SECTORES AÑADIDOS (EJEMPLOS PARA TI) ---
-    # =================================================================
+    # 12. TERCER SECTOR / SOCIAL / ONG
+    if any(x in text_content for x in ['social', 'ong', 'tercer sector', 'asoc', 'inclusion']): 
+        return "https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&w=800&q=80"
     
-    # A. TURISMO Y HOSTELERÍA
-    if any(x in c for x in ['turis', 'hotel', 'viaje', 'hostel']):
+    # 13. TURISMO
+    if any(x in text_content for x in ['turis', 'hotel', 'viaje', 'hostel']):
         return "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
 
-    # B. CONSTRUCCIÓN Y VIVIENDA
-    if any(x in c for x in ['construc', 'vivienda', 'rehab', 'edific']):
-        return "https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=800&q=80"
-        
-    # C. CULTURA Y ARTE
-    if any(x in c for x in ['cultur', 'arte', 'museo', 'teatro']):
-        return "https://images.unsplash.com/photo-1499364660878-4a307952fb99?auto=format&fit=crop&w=800&q=80"
-
-    # D. EMPLEO Y FORMACIÓN
-    if any(x in c for x in ['empleo', 'contrata', 'formaci', 'rrhh']):
-        return "https://images.unsplash.com/photo-1521791136064-7986c2920216?auto=format&fit=crop&w=800&q=80"
-
-    # E. MARITIMO
-
-    if any(x in c for x in ['mar', 'naval', 'barco', 'portuari']): 
-        return "https://images.unsplash.com/photo-1598194501777-edbff942e501?q=80&w=1169&auto=format&fit=crop&w=800&q=80"
-
-    # --- IMAGEN POR DEFECTO (Si no coincide con nada) ---
-    # He puesto una de oficina moderna genérica
-    return "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80"
+    # --- FALLBACK (Si no encuentra nada) ---
+    return "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80"
 
 # ==============================================================================
 # 5. UI PRINCIPAL
@@ -421,11 +450,13 @@ if check_password():
                 link_boe = str(row.iloc[0])
                 img_url = get_img_url(sector, titulo)
                 
-                badge_color = "#10b981" if "ALTA" in probabilidad else ("#f59e0b" if "MEDIA" in probabilidad else "#64748b")
+                # NOTA: El color del badge ahora es solo para el borde/texto, el fondo lo controla el CSS
+                badge_color = "#10b981" if "ALTA" in probabilidad else ("#f59e0b" if "MEDIA" in probabilidad else "#94a3b8")
                 
                 card_html = f"""
                 <div class="titan-card">
-                    <div class="card-badge" style="border-color:{badge_color}; color:{badge_color}">● {probabilidad}</div>
+                    <!-- BURBUJA CON ESTILO GLASSMORPHISM (CSS CLASE .card-badge) -->
+                    <div class="card-badge" style="border-color:{badge_color}; color:{badge_color} !important;">● {probabilidad}</div>
                     <div class="card-img-container"><img src="{img_url}" class="card-img"><div class="card-overlay"></div></div>
                     <div class="card-body">
                         <div class="card-title" title="{titulo}">{titulo}</div>
@@ -440,20 +471,17 @@ if check_password():
                 with cols[i % 2]:
                     st.markdown(card_html, unsafe_allow_html=True)
                     
-                    # --- AQUÍ ESTÁ LA MAGIA (SIN BOTÓN DE REINICIAR) ---
+                    # --- INTERACCIÓN ---
                     with st.expander("🔬 INVESTIGACIÓN PROFUNDA & PDF"):
                         key_investigacion = f"investigacion_{index}"
                         
-                        # Si NO existe investigación en caché, mostramos botón de buscar
                         if key_investigacion not in st.session_state:
                             st.info("💡 Pulsa para analizar las Bases Oficiales en tiempo real.")
                             if st.button("🔍 BUSCAR BASES REALES", key=f"ai_btn_{index}", use_container_width=True):
                                 with st.spinner("⏳ TITAN AI leyendo el BOE y extrayendo datos clave..."):
                                     res_profundo = investigar_con_ia(titulo, link_boe)
                                     st.session_state[key_investigacion] = res_profundo
-                                    st.rerun() # Recargamos para que desaparezca este botón
-                        
-                        # Si YA existe, mostramos resultado y PDF (Y NADA MÁS)
+                                    st.rerun() 
                         else:
                             st.success("✅ Auditoría Completada")
                             st.markdown(f"<div style='font-size:0.9rem; color:#475569'>{st.session_state[key_investigacion]}</div>", unsafe_allow_html=True)
@@ -468,7 +496,6 @@ if check_password():
                                 use_container_width=True,
                                 key=f"pdf_btn_{index}"
                             )
-                            # Cero botones de reinicio aquí. Solo descarga.
 
                     with st.expander("🔻 ANÁLISIS PREVIO", expanded=False):
                         st.markdown(f"""<div style='background:var(--bg-app); padding:15px; border-radius:8px; border-left:3px solid var(--accent); color:var(--text-secondary);'>
@@ -480,5 +507,3 @@ if check_password():
                         with c_btn2: st.button("⭐ SEGUIR", key=f"fav_{index}", use_container_width=True)
                     st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
     else: st.error("DATABASE ERROR")
-
-
