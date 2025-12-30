@@ -198,4 +198,16 @@ if check_password():
                 """
                 
                 with cols[i % 2]:
-                    st.markdown(card, un
+                    st.markdown(card, unsafe_allow_html=True)
+                    with st.expander("DETALLES"):
+                        st.write(row.iloc[6]) # Analisis IA
+                        st.caption(f"Requisitos: {str(row.iloc[8])[:200]}...")
+                        st.link_button("VER BOE", str(link_boe))
+                    st.write("") # Espacio
+
+            except Exception as e:
+                # Si una fila da error, simplemente la saltamos y el usuario no se entera
+                continue
+
+    else:
+        st.error("Error al cargar la base de datos.")
