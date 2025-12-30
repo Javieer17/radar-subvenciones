@@ -6,7 +6,6 @@ import plotly.express as px
 import time
 import re
 import os
-from datetime import datetime
 from groq import Groq
 from tavily import TavilyClient
 from fpdf import FPDF
@@ -43,7 +42,6 @@ st.markdown("""
         --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
         --metric-bg: rgba(255, 255, 255, 0.7);
         --input-bg: #ffffff;
-        --urgency-color: #ef4444;
     }
 
     @media (prefers-color-scheme: dark) {
@@ -71,7 +69,7 @@ st.markdown("""
         font-size: 3rem; font-weight: 900; margin-bottom: 0px;
     }
 
-    /* --- ESTILOS DE KPIS --- */
+    /* --- ESTILOS DE KPIS (RESTAURADOS Y MEJORADOS) --- */
     div[data-testid="metric-container"] {
         background-color: var(--metric-bg); 
         border: 1px solid var(--card-border);
@@ -87,6 +85,7 @@ st.markdown("""
         box-shadow: 0 8px 20px rgba(0,0,0,0.1);
     }
     
+    /* El número grande con degradado */
     [data-testid="stMetricValue"] { 
         font-family: 'Rajdhani', sans-serif !important; 
         font-size: 2.5rem !important;
@@ -95,6 +94,7 @@ st.markdown("""
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
     }
+    /* La etiqueta pequeña */
     [data-testid="stMetricLabel"] { 
         color: var(--text-secondary) !important; 
         font-weight: 600 !important;
@@ -118,20 +118,20 @@ st.markdown("""
     }
     .titan-card:hover { transform: translateY(-8px); box-shadow: 0 20px 40px -5px rgba(0,0,0,0.15); border-color: var(--primary-btn); }
 
-    /* --- CONTENEDOR DE IMAGEN --- */
+    /* --- CONTENEDOR DE IMAGEN (ARREGLADO AJUSTE) --- */
     .card-img-container { 
         position: relative; 
         height: 180px; 
-        width: 100%; 
+        width: 100%; /* Forzar ancho completo */
         overflow: hidden;
-        background-color: #0f172a; 
+        background-color: #0f172a; /* Fondo oscuro base */
         border-bottom: 1px solid var(--card-border);
     }
     
     .card-img { 
-        width: 100% !important; 
-        height: 100% !important; 
-        object-fit: cover !important; 
+        width: 100% !important; /* CRUCIAL: Ocupar todo el ancho */
+        height: 100% !important; /* CRUCIAL: Ocupar todo el alto */
+        object-fit: cover !important; /* CRUCIAL: Recortar sin deformar */
         object-position: center;
         display: block;
         transition: transform 0.5s ease; 
@@ -150,7 +150,7 @@ st.markdown("""
         position: absolute; 
         top: 12px; 
         right: 12px; 
-        background: rgba(15, 23, 42, 0.8);
+        background: rgba(15, 23, 42, 0.8); /* Más opaco para leerse mejor */
         backdrop-filter: blur(8px); 
         -webkit-backdrop-filter: blur(8px);
         color: #ffffff !important; 
@@ -165,20 +165,6 @@ st.markdown("""
         z-index: 20; 
         box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
-
-    /* --- ALERTA DE URGENCIA (NUEVO) --- */
-    .urgency-badge {
-        position: absolute; top: 12px; left: 12px; 
-        background: rgba(239, 68, 68, 0.95);
-        color: white; padding: 4px 10px; border-radius: 20px; 
-        font-size: 0.65rem; font-weight: 800;
-        z-index: 20; box-shadow: 0 2px 10px rgba(239, 68, 68, 0.5); 
-        animation: pulse 2s infinite;
-        font-family: 'Rajdhani', sans-serif;
-        text-transform: uppercase;
-        border: 1px solid rgba(255,255,255,0.3);
-    }
-    @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
 
     .card-body { padding: 20px; position: relative; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
     
@@ -229,24 +215,8 @@ def load_data():
         df = pd.read_csv(io.StringIO(r.content.decode('utf-8')))
         df.columns = [str(c).strip() for c in df.columns]
         df = df.dropna(subset=[df.columns[1]]) 
-        
-        # IMPORTANTE: Para que no falle si aún no tienes la columna en el Excel
-        if 'Beneficiario' not in df.columns:
-            df['Beneficiario'] = 'General'
-            
         return df
     except Exception as e: return None
-
-# --- NUEVA FUNCIÓN DE URGENCIA ---
-def check_urgency(fecha_str):
-    """Devuelve True si faltan 7 días o menos"""
-    try:
-        # Intenta parsear DD/MM/AAAA
-        fecha_obj = datetime.strptime(str(fecha_str).strip(), '%d/%m/%Y')
-        dias_restantes = (fecha_obj - datetime.now()).days
-        return dias_restantes <= 7 and dias_restantes >= -1 # Incluimos hoy y ayer por si acaso
-    except:
-        return False
 
 def investigar_con_ia(titulo, link_boe):
     try:
@@ -326,96 +296,111 @@ def get_tag_bg(tag):
     return "background: #475569;"
 
 # ==============================================================================
-#  IMÁGENES INTELIGENTES (CON ORDEN DE PRIORIDAD CORRECTO)
+#  IMÁGENES CORREGIDAS (IDS ESTÁTICOS DE UNSPLASH)
 # ==============================================================================
 def get_img_url(sector, titulo):
-    # 1. Limpieza de texto y tildes
+    # 1. Convertimos a minúsculas
     text_content = (str(sector) + " " + str(titulo)).lower()
-    replacements = (("á", "a"), ("é", "e"), ("í", "i"), ("ó", "o"), ("ú", "u"), ("ü", "u"), ("ñ", "n"))
+    
+    # 2. ELIMINACIÓN DE TILDES AUTOMÁTICA (TRUCO PRO)
+    # Esto hace que 'Eólica' se convierta en 'eolica' para que no falle nunca
+    replacements = (
+        ("á", "a"), ("é", "e"), ("í", "i"), ("ó", "o"), ("ú", "u"), ("ü", "u"),
+        ("ñ", "n") # Opcional, pero ayuda a veces
+    )
     for a, b in replacements:
         text_content = text_content.replace(a, b)
     
+    # URL BASE DE UNSPLASH (Optimizada para tarjetas)
+    # Usamos IDs específicos para evitar errores 404
     base_params = "?auto=format&fit=crop&w=800&q=80"
     
-    # --- GRUPO 1: LO MÁS ESPECÍFICO ---
+    # --- AHORA BUSCAMOS SIEMPRE SIN TILDES EN LAS LISTAS ---
 
     # 1. EMERGENCIAS / DANA
     if any(x in text_content for x in ['dana', 'catastrofe', 'emergencia', 'inundaci']): 
         return f"https://images.unsplash.com/photo-1639164631388-857f29935861{base_params}"
 
-    # 2. MARITIMO / NAVAL (TU FOTO SOLICITADA)
-    if any(x in text_content for x in ['maritimo', 'naval', 'barco', 'puerto', 'portuari', 'mercancia', 'transporte maritimo']): 
-        return f"https://images.unsplash.com/photo-1606185540834-d6e7483ee1a4{base_params}"
-
-    # 3. OBRAS CIVILES / PAVIMENTACIÓN
-    if any(x in text_content for x in ['paviment', 'calle', 'asfalt', 'urbaniz', 'pluvial', 'saneamiento', 'alcantarillado', 'abastecimiento', 'obras de']): 
-        return f"https://images.unsplash.com/photo-1621255558983-0498b98b76c1{base_params}"
-
-    # 4. CULTURA / PATRIMONIO
-    if any(x in text_content for x in ['cultur', 'patrimonio', 'historic', 'archivo', 'museo', 'arte', 'bellas artes', 'restauracion', 'bienes inmuebles']): 
-        return f"https://images.unsplash.com/photo-1544211603-99b3b8793540{base_params}"
-
-    # 5. HIDROELÉCTRICA
-    if any(x in text_content for x in ['hidro', 'repotencia', 'central', 'presa', 'agua']): 
-        return f"https://images.unsplash.com/photo-1468421201266-2a86ef21940d{base_params}"
-
-    # --- GRUPO 2: ENERGÍA ---
-    
-    # 6. ENERGÍA EÓLICA
+    # 2. ENERGÍA EÓLICA (Tu foto)
+    # Fíjate que pongo 'eolic' y 'aerogenerador' sin preocuparme de tildes
     if any(x in text_content for x in ['eolic', 'viento', 'aerogenerador', 'wind']): 
         return f"https://images.unsplash.com/photo-1548337138-e87d889cc369{base_params}"
 
-    # 7. ENERGÍA SOLAR / RENOVABLES / AUTOCONSUMO
-    if any(x in text_content for x in ['solar', 'fotov', 'placas', 'autoconsumo', 'almacenamiento', 'renovable', 'bomba de calor']): 
+    # 3. ENERGÍA SOLAR / FOTOVOLTAICA
+    if any(x in text_content for x in ['solar', 'fotov', 'placas']): 
         return f"https://images.unsplash.com/photo-1756913454593-ac5cab482a7a{base_params}"
 
-    # 8. COMBUSTIBLES / GAS
-    if any(x in text_content for x in ['gas', 'combustible', 'hidrogeno', 'biogas']): 
-        return f"https://images.unsplash.com/photo-1626573867620-302324147748{base_params}"
-
-    # --- GRUPO 3: RESTO DE SECTORES ---
-
-    # 9. MOVILIDAD / COCHES
+    # 4. MOVILIDAD / MOVES / COCHES
     if any(x in text_content for x in ['moves', 'coche', 'vehiculo', 'puntos de recarga', 'automocion']): 
         return f"https://images.unsplash.com/photo-1596731498067-99aeb581d3d7{base_params}"
 
-    # 10. SALUD
+    # 5. SALUD / SOCIO-SANITARIO
     if any(x in text_content for x in ['salud', 'sanitar', 'farma', 'medic', 'hospital', 'cancer']): 
         return f"https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7{base_params}"
 
-    # 11. INDUSTRIA
+    # 6. INDUSTRIA / CADENA DE VALOR
     if any(x in text_content for x in ['indust', 'manufac', 'fabrica', 'maquina', 'cadena de valor']): 
         return f"https://images.unsplash.com/photo-1581091226825-a6a2a5aee158{base_params}"
 
-    # 12. AGRO
+    # 7. EDUCACIÓN / FORMACIÓN / LECTORADOS / BECAS
+    # Aquí 'formación' daría problemas, así que buscamos 'formaci' o 'formacion' (sin tilde gracias al truco)
+    if any(x in text_content for x in ['educa', 'formaci', 'universidad', 'beca', 'lector', 'curso', 'fp', 'profesional']): 
+        return f"https://images.unsplash.com/photo-1524178232363-1fb2b075b655{base_params}"
+
+    # 8. DIGITAL / IA / SOFTWARE
+    if any(x in text_content for x in ['digital', 'ia ', 'softw', 'tic', 'cyber', 'ciber']): 
+        return f"https://images.unsplash.com/photo-1580894894513-541e068a3e2b{base_params}"
+
+    # 9. AGRO / CAMPO
     if any(x in text_content for x in ['agro', 'campo', 'forest', 'ganad', 'rural']): 
         return f"https://images.unsplash.com/photo-1625246333195-78d9c38ad449{base_params}"
 
-    # 13. TURISMO
+    # 10. TURISMO
     if any(x in text_content for x in ['turis', 'hotel', 'viaje', 'hostel']):
         return f"https://images.unsplash.com/photo-1551882547-ff40c63fe5fa{base_params}"
 
-    # --- GRUPO 4: GENÉRICOS ---
-
-    # 14. EDUCACIÓN / JUVENTUD
-    if any(x in text_content for x in ['educa', 'formaci', 'universidad', 'beca', 'lector', 'curso', 'joven', 'estudiante', 'egresado', 'asociaci']): 
-        return f"https://images.unsplash.com/photo-1524178232363-1fb2b075b655{base_params}"
-
-    # 15. DIGITAL / ASESORAMIENTO
-    if any(x in text_content for x in ['digital', 'ia ', 'softw', 'tic', 'cyber', 'ciber', 'asesora', 'consultor', 'transformacion']): 
-        return f"https://images.unsplash.com/photo-1580894894513-541e068a3e2b{base_params}"
-
-    # 16. CONSTRUCCIÓN / VIVIENDA
+    # 11. CONSTRUCCIÓN / VIVIENDA
     if any(x in text_content for x in ['construc', 'vivienda', 'rehab', 'edific']):
         return f"https://images.unsplash.com/photo-1503387762-592deb58ef4e{base_params}"
 
-    # 17. INNOVACIÓN / STARTUPS
-    if any(x in text_content for x in ['startup', 'emprende', 'idi', 'innovacion', 'tecnologic', 'investig', 'transferencia']): 
+    # 12. MARITIMO / NAVAL (TU FOTO BARCO)
+    # Ahora detectará "Marítimo" aunque lleve tilde
+    if any(x in text_content for x in ['maritimo', 'naval', 'barco', 'puerto', 'portuari', 'mercancia', 'transporte']): 
+        return f"https://images.unsplash.com/photo-1606185540834-d6e7483ee1a4{base_params}"
+
+    # --- NUEVAS CATEGORÍAS ---
+
+    # 13. HIDROELÉCTRICA / REPOTENCIACIÓN
+    if any(x in text_content for x in ['hidro', 'repotencia', 'central', 'presa', 'agua']): 
+        return f"https://images.unsplash.com/photo-1642915064502-f9cfb135f347{base_params}"
+
+    # 14. I+D+i / STARTUPS
+    if any(x in text_content for x in ['startup', 'emprende', 'idi', 'innovacion', 'tecnologic', 'investig']): 
         return f"https://images.unsplash.com/photo-1519389950473-47ba0277781c{base_params}"
+
+    # 15. CULTURA / PATRIMONIO
+    if any(x in text_content for x in ['cultur', 'patrimonio', 'historic', 'archivo', 'museo', 'arte']): 
+        return f"https://images.unsplash.com/photo-1765984990058-2f4a880bf9af{base_params}"
+
+    # 16. OBRAS CIVILES / PAVIMENTACIÓN
+    if any(x in text_content for x in ['paviment', 'calle', 'obra', 'asfalt', 'urbaniz']): 
+        return f"https://images.unsplash.com/photo-1762438441472-be21c5148e8a{base_params}"
+
+    # 17. COMBUSTIBLES / GAS
+    if any(x in text_content for x in ['gas', 'combustible', 'hidrogeno', 'renovable', 'biogas']): 
+        return f"https://images.unsplash.com/photo-1654334036171-e01e52b2ce8e{base_params}"
+
+    # 18. ASESORAMIENTO / DIGITALIZACIÓN
+    if any(x in text_content for x in ['asesora', 'consultor', 'transformacion', 'kit digital']): 
+        return f"https://images.unsplash.com/photo-1454165804606-c3d57bc86b40{base_params}"
+
+    # 19. JUVENTUD / ASOCIACIONES
+    if any(x in text_content for x in ['joven', 'juvenil', 'estudiante', 'egresado', 'asociaci', 'federacion']): 
+        return f"https://images.unsplash.com/photo-1523240795612-9a054b0db644{base_params}"
 
     # DEFAULT
     return f"https://images.unsplash.com/photo-1497215728101-856f4ea42174{base_params}"
-
+    
 # ==============================================================================
 # 5. UI PRINCIPAL
 # ==============================================================================
@@ -423,35 +408,18 @@ if check_password():
     df = load_data()
     if df is not None:
         
-        # --- SIDEBAR (FILTROS EN CASCADA) ---
+        # --- SIDEBAR ---
         with st.sidebar:
             if os.path.exists(LOGO_FILE): st.image(LOGO_FILE, use_container_width=True)
             st.markdown("### 🎛️ FILTROS")
             st.markdown("---")
-            
-            # 1. BÚSQUEDA
             query = st.text_input("Búsqueda Textual", placeholder="Ej: Digitalización...", key="search_bar")
-            
-            # 2. FILTRO CASCADA (TIPO -> SECTOR)
-            # Primero filtramos por la nueva columna "Beneficiario"
-            tipos_beneficiarios = sorted(df['Beneficiario'].astype(str).unique())
-            sel_tipo = st.multiselect("Tipo de Beneficiario", tipos_beneficiarios)
-            
-            # Creamos un DF temporal filtrado para que el siguiente select solo muestre opciones válidas
-            df_filtered_step1 = df.copy()
-            if sel_tipo:
-                df_filtered_step1 = df[df['Beneficiario'].isin(sel_tipo)]
-            
-            # Segundo: Sectores (filtrados)
-            sectores_disponibles = sorted(df_filtered_step1.iloc[:, 5].astype(str).unique())
-            sel_sector = st.multiselect("Sector Estratégico", sectores_disponibles)
-            
-            # Tercero: Probabilidad
+            sectores_unicos = sorted(df.iloc[:, 5].astype(str).unique())
             probs_unicas = sorted(df.iloc[:, 9].astype(str).unique())
+            sel_sector = st.multiselect("Sector Estratégico", sectores_unicos)
             sel_prob = st.multiselect("Probabilidad de Éxito", probs_unicas)
             
-            # APLICAMOS FILTROS FINALES AL DF PRINCIPAL
-            filtered_df = df_filtered_step1.copy()
+            filtered_df = df.copy()
             if query: filtered_df = filtered_df[filtered_df.apply(lambda r: r.astype(str).str.contains(query, case=False).any(), axis=1)]
             if sel_sector: filtered_df = filtered_df[filtered_df.iloc[:, 5].astype(str).isin(sel_sector)]
             if sel_prob: filtered_df = filtered_df[filtered_df.iloc[:, 9].astype(str).isin(sel_prob)]
@@ -516,18 +484,15 @@ if check_password():
                 link_boe = str(row.iloc[0])
                 img_url = get_img_url(sector, titulo)
                 
+                # Definir color del borde de la burbuja según probabilidad
                 badge_border = "rgba(16, 185, 129, 0.5)" if "ALTA" in probabilidad else ("rgba(245, 158, 11, 0.5)" if "MEDIA" in probabilidad else "rgba(148, 163, 184, 0.5)")
                 
-                # --- CHECK DE URGENCIA (NUEVO) ---
-                is_urgent = check_urgency(plazo)
-                urgency_html = "<div class='urgency-badge'>🚨 CIERRE INMINENTE</div>" if is_urgent else ""
-
+                # HTML DE LA TARJETA
                 card_html = f"""
                 <div class="titan-card">
                     <div class="card-img-container">
                         <img src="{img_url}" class="card-img">
                         <div class="card-overlay"></div>
-                        {urgency_html}
                         <div class="card-badge" style="border-color:{badge_border};">● {probabilidad}</div>
                     </div>
                     <div class="card-body">
@@ -537,7 +502,7 @@ if check_password():
                         </div>
                         <div class="specs-grid">
                             <div class="spec-item"><span class="spec-label">Cuantía Disp.</span><span class="spec-value">{cuantia}</span></div>
-                            <div class="spec-item"><span class="spec-label">Cierre</span><span class="spec-value" style="{'color:#ef4444' if is_urgent else ''}">{plazo}</span></div>
+                            <div class="spec-item"><span class="spec-label">Cierre</span><span class="spec-value">{plazo}</span></div>
                         </div>
                     </div>
                 </div>
@@ -570,3 +535,8 @@ if check_password():
                         with c_btn2: st.button("⭐ SEGUIR", key=f"fav_{index}", use_container_width=True)
                     st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
     else: st.error("DATABASE ERROR")
+
+
+
+
+
