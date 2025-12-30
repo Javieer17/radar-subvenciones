@@ -328,7 +328,7 @@ def get_img_url(sector, titulo):
     # E. MARITIMO
 
     if any(x in c for x in ['mar', 'naval', 'barco', 'portuari']): 
-    return "https://images.unsplash.com/photo-1598194501777-edbff942e501?q=80&w=1169&auto=format&fit=crop&w=800&q=80"
+        return "https://images.unsplash.com/photo-1598194501777-edbff942e501?q=80&w=1169&auto=format&fit=crop&w=800&q=80"
 
     # --- IMAGEN POR DEFECTO (Si no coincide con nada) ---
     # He puesto una de oficina moderna genérica
@@ -480,4 +480,5 @@ if check_password():
                         with c_btn2: st.button("⭐ SEGUIR", key=f"fav_{index}", use_container_width=True)
                     st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
     else: st.error("DATABASE ERROR")
+
 
