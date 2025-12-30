@@ -5,6 +5,7 @@ import io
 import plotly.express as px
 import time
 import re  # IMPORTANTE PARA LIMPIAR EL PDF
+import os  # Para verificar si existe el logo
 from groq import Groq
 from tavily import TavilyClient
 from fpdf import FPDF
@@ -12,8 +13,8 @@ from fpdf import FPDF
 # ==============================================================================
 # 0. CONFIGURACIÓN GLOBAL Y LOGO
 # ==============================================================================
-# 🔴 CAMBIA ESTO POR LA URL DE TU LOGO O LA RUTA DE TU ARCHIVO LOCAL
-LOGO_URL = "https://cdn-icons-png.flaticon.com/512/2622/2622416.png" 
+# 🔴 IMPORTANTE: Guarda tu imagen como "logo.png" en la misma carpeta que este código
+LOGO_FILE = "logo.png" 
 
 st.set_page_config(
     page_title="Radar Subvenciones | TITAN X",
@@ -201,16 +202,18 @@ def clean_format(text):
 # --- GENERADOR PDF CON LOGO ---
 class PDFReport(FPDF):
     def header(self):
-        # LOGO (A la izquierda)
-        try:
-            self.image(LOGO_URL, 10, 8, 30) # x, y, ancho
-        except: pass
+        # LOGO (Busca el archivo local 'logo.png')
+        if os.path.exists(LOGO_FILE):
+            try:
+                # Ajusta las coordenadas (x,y) y el ancho (w) según tu imagen
+                self.image(LOGO_FILE, x=10, y=8, w=40) 
+            except: pass
         
-        # TEXTO CABECERA
+        # TEXTO CABECERA (Alineado a la derecha para no pisar el logo)
         self.set_font('Arial', 'B', 10)
         self.set_text_color(100, 100, 100)
         self.cell(0, 10, 'TITAN X | INFORME DE ESTRATEGIA', 0, 1, 'R')
-        self.ln(10)
+        self.ln(15) # Espacio extra para que no se solape con el logo
 
     def footer(self):
         self.set_y(-15)
@@ -284,7 +287,10 @@ if check_password():
         
         # --- SIDEBAR ---
         with st.sidebar:
-            st.image(LOGO_URL, width=120) # LOGO EN SIDEBAR
+            # MOSTRAR EL LOGO EN LA BARRA LATERAL TAMBIÉN
+            if os.path.exists(LOGO_FILE):
+                st.image(LOGO_FILE, use_container_width=True)
+            
             st.markdown("### 🎛️ FILTROS")
             st.markdown("---")
             query = st.text_input("Búsqueda Textual", placeholder="Ej: Digitalización...", key="search_bar")
