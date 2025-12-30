@@ -355,8 +355,7 @@ def get_img_url(sector, titulo):
 
     # DEFAULT
     return f"https://images.unsplash.com/photo-1497215728101-856f4ea42174{base_params}" # Oficina Business
-        https://images.unsplash.com/photo-1606185540834-d6e7483ee1a4?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D
-
+    
 # ==============================================================================
 # 5. UI PRINCIPAL
 # ==============================================================================
@@ -491,5 +490,6 @@ if check_password():
                         with c_btn2: st.button("⭐ SEGUIR", key=f"fav_{index}", use_container_width=True)
                     st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
     else: st.error("DATABASE ERROR")
+
 
 
