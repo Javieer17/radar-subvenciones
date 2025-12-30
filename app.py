@@ -6,6 +6,7 @@ import plotly.express as px
 import time
 import re
 import os
+from datetime import datetime # <--- IMPRESCINDIBLE PARA EL CALCULO DE FECHAS
 from groq import Groq
 from tavily import TavilyClient
 from fpdf import FPDF
@@ -13,8 +14,7 @@ from fpdf import FPDF
 # ==============================================================================
 # 0. CONFIGURACIÓN GLOBAL Y LOGO
 # ==============================================================================
-LOGO_FILE = "logo.png" 
-
+LOGO_FILE = "logo.png"
 st.set_page_config(
     page_title="Radar Subvenciones | TITAN X",
     page_icon="💠",
@@ -26,165 +26,179 @@ st.set_page_config(
 # 2. CSS DINÁMICO (TITAN ADAPTIVE THEME)
 # ==============================================================================
 st.markdown("""
-    <style>
-    /* IMPORTACIÓN DE FUENTES */
-    @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700;800&family=Outfit:wght@300;400;700;900&display=swap');
+<style>
+/* IMPORTACIÓN DE FUENTES */
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700;800&family=Outfit:wght@300;400;700;900&display=swap');
 
-    /* --- VARIABLES DE COLORES --- */
+/* --- VARIABLES DE COLORES --- */
+:root {
+    --bg-app: #f8fafc;
+    --card-bg: #ffffff;
+    --card-border: #e2e8f0;
+    --text-primary: #0f172a;
+    --text-secondary: #64748b;
+    --accent: #06b6d4;
+    --primary-btn: #3b82f6;
+    --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    --metric-bg: rgba(255, 255, 255, 0.7);
+    --input-bg: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
     :root {
-        --bg-app: #f8fafc;
-        --card-bg: #ffffff;
-        --card-border: #e2e8f0;
-        --text-primary: #0f172a;
-        --text-secondary: #64748b;
-        --accent: #06b6d4;
-        --primary-btn: #3b82f6;
-        --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-        --metric-bg: rgba(255, 255, 255, 0.7);
-        --input-bg: #ffffff;
+        --bg-app: #0f172a;
+        --card-bg: #1e293b;
+        --card-border: #334155;
+        --text-primary: #f8fafc;
+        --text-secondary: #94a3b8;
+        --accent: #22d3ee;
+        --primary-btn: #60a5fa;
+        --shadow-card: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+        --metric-bg: rgba(30, 41, 59, 0.7);
+        --input-bg: #1e293b;
     }
+}
 
-    @media (prefers-color-scheme: dark) {
-        :root {
-            --bg-app: #0f172a;
-            --card-bg: #1e293b;
-            --card-border: #334155;
-            --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
-            --accent: #22d3ee;
-            --primary-btn: #60a5fa;
-            --shadow-card: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
-            --metric-bg: rgba(30, 41, 59, 0.7);
-            --input-bg: #1e293b;
-        }
-    }
+.stApp { font-family: 'Outfit', sans-serif; background-color: var(--bg-app); }
+h1, h2, h3 { font-family: 'Outfit', sans-serif !important; font-weight: 800 !important; color: var(--text-primary) !important; }
 
-    .stApp { font-family: 'Outfit', sans-serif; background-color: var(--bg-app); }
-    h1, h2, h3 { font-family: 'Outfit', sans-serif !important; font-weight: 800 !important; color: var(--text-primary) !important; }
-    
-    .titan-header {
-        background: -webkit-linear-gradient(0deg, var(--primary-btn), var(--accent));
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        font-size: 3rem; font-weight: 900; margin-bottom: 0px;
-    }
+.titan-header {
+    background: -webkit-linear-gradient(0deg, var(--primary-btn), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-size: 3rem; font-weight: 900; margin-bottom: 0px;
+}
 
-    /* --- ESTILOS DE KPIS (RESTAURADOS Y MEJORADOS) --- */
-    div[data-testid="metric-container"] {
-        background-color: var(--metric-bg); 
-        border: 1px solid var(--card-border);
-        padding: 15px 20px; 
-        border-radius: 12px; 
-        backdrop-filter: blur(10px);
-        box-shadow: var(--shadow-card);
-        transition: all 0.3s ease;
-    }
-    div[data-testid="metric-container"]:hover { 
-        border-color: var(--accent); 
-        transform: translateY(-2px); 
-        box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-    }
-    
-    /* El número grande con degradado */
-    [data-testid="stMetricValue"] { 
-        font-family: 'Rajdhani', sans-serif !important; 
-        font-size: 2.5rem !important;
-        font-weight: 800 !important;
-        background: -webkit-linear-gradient(45deg, var(--accent), var(--primary-btn));
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-    }
-    /* La etiqueta pequeña */
-    [data-testid="stMetricLabel"] { 
-        color: var(--text-secondary) !important; 
-        font-weight: 600 !important;
-        font-size: 0.9rem !important;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
+/* --- ESTILOS DE KPIS --- */
+div[data-testid="metric-container"] {
+    background-color: var(--metric-bg); 
+    border: 1px solid var(--card-border);
+    padding: 15px 20px; 
+    border-radius: 12px; 
+    backdrop-filter: blur(10px);
+    box-shadow: var(--shadow-card);
+    transition: all 0.3s ease;
+}
+div[data-testid="metric-container"]:hover { 
+    border-color: var(--accent); 
+    transform: translateY(-2px); 
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+}
 
-    /* --- TARJETAS TITAN --- */
-    .titan-card {
-        background: var(--card-bg); 
-        border-radius: 16px; 
-        border: 1px solid var(--card-border);
-        overflow: hidden; 
-        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        margin-bottom: 20px; 
-        height: 100%; 
-        box-shadow: var(--shadow-card);
-        display: flex;
-        flex-direction: column;
-    }
-    .titan-card:hover { transform: translateY(-8px); box-shadow: 0 20px 40px -5px rgba(0,0,0,0.15); border-color: var(--primary-btn); }
+/* El número grande con degradado */
+[data-testid="stMetricValue"] { 
+    font-family: 'Rajdhani', sans-serif !important; 
+    font-size: 2.5rem !important;
+    font-weight: 800 !important;
+    background: -webkit-linear-gradient(45deg, var(--accent), var(--primary-btn));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+/* La etiqueta pequeña */
+[data-testid="stMetricLabel"] { 
+    color: var(--text-secondary) !important; 
+    font-weight: 600 !important;
+    font-size: 0.9rem !important;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
 
-    /* --- CONTENEDOR DE IMAGEN (ARREGLADO AJUSTE) --- */
-    .card-img-container { 
-        position: relative; 
-        height: 180px; 
-        width: 100%; /* Forzar ancho completo */
-        overflow: hidden;
-        background-color: #0f172a; /* Fondo oscuro base */
-        border-bottom: 1px solid var(--card-border);
-    }
-    
-    .card-img { 
-        width: 100% !important; /* CRUCIAL: Ocupar todo el ancho */
-        height: 100% !important; /* CRUCIAL: Ocupar todo el alto */
-        object-fit: cover !important; /* CRUCIAL: Recortar sin deformar */
-        object-position: center;
-        display: block;
-        transition: transform 0.5s ease; 
-        filter: brightness(0.9); 
-    }
-    .titan-card:hover .card-img { transform: scale(1.1); filter: brightness(1.05); }
+/* --- TARJETAS TITAN --- */
+.titan-card {
+    background: var(--card-bg); 
+    border-radius: 16px; 
+    border: 1px solid var(--card-border);
+    overflow: hidden; 
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    margin-bottom: 20px; 
+    height: 100%; 
+    box-shadow: var(--shadow-card);
+    display: flex;
+    flex-direction: column;
+}
+.titan-card:hover { transform: translateY(-8px); box-shadow: 0 20px 40px -5px rgba(0,0,0,0.15); border-color: var(--primary-btn); }
 
-    .card-overlay { 
-        position: absolute; bottom: 0; left: 0; right: 0; height: 100%; 
-        background: linear-gradient(to top, var(--card-bg) 0%, transparent 60%); 
-        pointer-events: none;
-    }
+/* --- CONTENEDOR DE IMAGEN --- */
+.card-img-container { 
+    position: relative; 
+    height: 180px; 
+    width: 100%; 
+    overflow: hidden;
+    background-color: #0f172a; 
+    border-bottom: 1px solid var(--card-border);
+}
 
-    /* --- BURBUJA (BADGE) --- */
-    .card-badge {
-        position: absolute; 
-        top: 12px; 
-        right: 12px; 
-        background: rgba(15, 23, 42, 0.8); /* Más opaco para leerse mejor */
-        backdrop-filter: blur(8px); 
-        -webkit-backdrop-filter: blur(8px);
-        color: #ffffff !important; 
-        padding: 5px 12px;
-        border-radius: 8px; 
-        font-size: 0.7rem; 
-        font-family: 'Rajdhani', sans-serif; 
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        border: 1px solid rgba(255, 255, 255, 0.15); 
-        z-index: 20; 
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    }
+.card-img { 
+    width: 100% !important; 
+    height: 100% !important; 
+    object-fit: cover !important; 
+    object-position: center;
+    display: block;
+    transition: transform 0.5s ease; 
+    filter: brightness(0.9); 
+}
+.titan-card:hover .card-img { transform: scale(1.1); filter: brightness(1.05); }
 
-    .card-body { padding: 20px; position: relative; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
-    
-    .card-title {
-        color: var(--text-primary); font-weight: 800; font-size: 1.15rem; line-height: 1.3;
-        margin-bottom: 12px; min-height: 3rem; display: -webkit-box; -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical; overflow: hidden;
-    }
+.card-overlay { 
+    position: absolute; bottom: 0; left: 0; right: 0; height: 100%; 
+    background: linear-gradient(to top, var(--card-bg) 0%, transparent 60%); 
+    pointer-events: none;
+}
 
-    .specs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--card-border); }
-    .spec-item { display: flex; flex-direction: column; }
-    .spec-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); font-weight: 700; }
-    .spec-value { font-family: 'Rajdhani', sans-serif; font-size: 1.1rem; font-weight: 700; color: var(--text-primary); }
+/* --- BURBUJA (BADGE) --- */
+.card-badge {
+    position: absolute; 
+    top: 12px; 
+    right: 12px; 
+    background: rgba(15, 23, 42, 0.8); 
+    backdrop-filter: blur(8px); 
+    -webkit-backdrop-filter: blur(8px);
+    color: #ffffff !important; 
+    padding: 5px 12px;
+    border-radius: 8px; 
+    font-size: 0.7rem; 
+    font-family: 'Rajdhani', sans-serif; 
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border: 1px solid rgba(255, 255, 255, 0.15); 
+    z-index: 20; 
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
 
-    .titan-tag { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; margin-right: 4px; margin-bottom: 4px; text-transform: uppercase; color: white; }
-    
-    .stTextInput input, .stMultiSelect div[data-baseweb="select"] { background-color: var(--input-bg) !important; border: 1px solid var(--card-border) !important; color: var(--text-primary) !important; border-radius: 8px; }
-    .stExpander { border: 1px solid var(--card-border) !important; border-radius: 8px !important; background-color: var(--card-bg) !important; }
-    .streamlit-expanderHeader { background-color: transparent !important; color: var(--text-primary) !important; font-weight: 700 !important; }
-    </style>
+/* --- NUEVO CSS: ALERTA DE URGENCIA --- */
+.urgency-badge {
+    position: absolute; top: 12px; left: 12px; 
+    background: rgba(239, 68, 68, 0.95);
+    color: white; padding: 4px 10px; border-radius: 20px; 
+    font-size: 0.65rem; font-weight: 800;
+    z-index: 20; box-shadow: 0 2px 10px rgba(239, 68, 68, 0.5); 
+    animation: pulse 2s infinite;
+    font-family: 'Rajdhani', sans-serif;
+    text-transform: uppercase;
+    border: 1px solid rgba(255,255,255,0.3);
+}
+@keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+
+.card-body { padding: 20px; position: relative; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
+
+.card-title {
+    color: var(--text-primary); font-weight: 800; font-size: 1.15rem; line-height: 1.3;
+    margin-bottom: 12px; min-height: 3rem; display: -webkit-box; -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical; overflow: hidden;
+}
+
+.specs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--card-border); }
+.spec-item { display: flex; flex-direction: column; }
+.spec-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); font-weight: 700; }
+.spec-value { font-family: 'Rajdhani', sans-serif; font-size: 1.1rem; font-weight: 700; color: var(--text-primary); }
+
+.titan-tag { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; margin-right: 4px; margin-bottom: 4px; text-transform: uppercase; color: white; }
+
+.stTextInput input, .stMultiSelect div[data-baseweb="select"] { background-color: var(--input-bg) !important; border: 1px solid var(--card-border) !important; color: var(--text-primary) !important; border-radius: 8px; }
+.stExpander { border: 1px solid var(--card-border) !important; border-radius: 8px !important; background-color: var(--card-bg) !important; }
+.streamlit-expanderHeader { background-color: transparent !important; color: var(--text-primary) !important; font-weight: 700 !important; }
+</style>
 """, unsafe_allow_html=True)
 
 # ==============================================================================
@@ -214,9 +228,37 @@ def load_data():
         r = requests.get(url, timeout=10)
         df = pd.read_csv(io.StringIO(r.content.decode('utf-8')))
         df.columns = [str(c).strip() for c in df.columns]
-        df = df.dropna(subset=[df.columns[1]]) 
+        df = df.dropna(subset=[df.columns[1]])
+        # Rellenamos vacíos para evitar errores
+        df = df.fillna("")
         return df
     except Exception as e: return None
+
+# --- NUEVA FUNCIÓN SEGURA PARA VERIFICAR FECHAS ---
+def check_urgency(fecha_raw):
+    """
+    Comprueba si faltan 7 días o menos.
+    Si la celda dice 'No especificado' o algo raro, devuelve False (NO ROMPE LA APP).
+    """
+    try:
+        # 1. Limpiamos el texto
+        s_fecha = str(fecha_raw).strip().lower()
+        
+        # 2. Si contiene texto como "no", "pend", "especifi", ASUMIMOS QUE NO HAY FECHA FIJA
+        if "no" in s_fecha or "pend" in s_fecha or "spec" in s_fecha or len(s_fecha) < 6:
+            return False
+            
+        # 3. Intentamos convertir la fecha (formato DD/MM/YYYY)
+        # Solo si esto funciona, calculamos. Si falla, salta al 'except'.
+        fecha_obj = datetime.strptime(s_fecha, '%d/%m/%Y')
+        dias_restantes = (fecha_obj - datetime.now()).days
+        
+        # 4. Si faltan entre 7 y -1 dias (incluye hoy y ayer), es urgente
+        return -1 <= dias_restantes <= 7
+        
+    except:
+        # Si falla por CUALQUIER motivo (formato raro, vacio), devolvemos False y seguimos
+        return False
 
 def investigar_con_ia(titulo, link_boe):
     try:
@@ -240,9 +282,9 @@ def investigar_con_ia(titulo, link_boe):
 
 def clean_format(text):
     if not isinstance(text, str): return str(text)
-    text = re.sub(r'#{1,6}\s?', '', text) 
-    text = re.sub(r'\*\*(.*?)\*\*', r'\1', text) 
-    text = re.sub(r'\*(.*?)\*', r'\1', text) 
+    text = re.sub(r'#{1,6}\s?', '', text)
+    text = re.sub(r'\*\*(.*?)\*\*', r'\1', text)
+    text = re.sub(r'\*(.*?)\*', r'\1', text)
     replacements = {'—': '-', '–': '-', '“': '"', '”': '"', '’': "'", '‘': "'", '€': 'EUR', '•': '-', '…': '...', '🔍': '->', '⚠️': '(!)', '💡': '(IDEA)', '✅': '(SI)'}
     for k, v in replacements.items(): text = text.replace(k, v)
     return text.encode('latin-1', 'replace').decode('latin-1')
@@ -250,7 +292,7 @@ def clean_format(text):
 class PDFReport(FPDF):
     def header(self):
         if os.path.exists(LOGO_FILE):
-            try: self.image(LOGO_FILE, x=10, y=8, w=40) 
+            try: self.image(LOGO_FILE, x=10, y=8, w=40)
             except: pass
         self.set_font('Arial', 'B', 10)
         self.set_text_color(100, 100, 100)
@@ -296,111 +338,45 @@ def get_tag_bg(tag):
     return "background: #475569;"
 
 # ==============================================================================
-#  IMÁGENES CORREGIDAS (IDS ESTÁTICOS DE UNSPLASH)
+# IMÁGENES CORREGIDAS
 # ==============================================================================
 def get_img_url(sector, titulo):
-    # 1. Convertimos a minúsculas
     text_content = (str(sector) + " " + str(titulo)).lower()
     
-    # 2. ELIMINACIÓN DE TILDES AUTOMÁTICA (TRUCO PRO)
-    # Esto hace que 'Eólica' se convierta en 'eolica' para que no falle nunca
-    replacements = (
-        ("á", "a"), ("é", "e"), ("í", "i"), ("ó", "o"), ("ú", "u"), ("ü", "u"),
-        ("ñ", "n") # Opcional, pero ayuda a veces
-    )
+    # 2. ELIMINACIÓN DE TILDES AUTOMÁTICA
+    replacements = (("á", "a"), ("é", "e"), ("í", "i"), ("ó", "o"), ("ú", "u"), ("ü", "u"), ("ñ", "n"))
     for a, b in replacements:
         text_content = text_content.replace(a, b)
-    
-    # URL BASE DE UNSPLASH (Optimizada para tarjetas)
-    # Usamos IDs específicos para evitar errores 404
+
     base_params = "?auto=format&fit=crop&w=800&q=80"
     
-    # --- AHORA BUSCAMOS SIEMPRE SIN TILDES EN LAS LISTAS ---
+    # --- 1. ANIMALES (NUEVO) ---
+    if any(x in text_content for x in ['animal', 'protectora', 'perro', 'gato', 'mascota', 'veterinari', 'fauna', 'especie']): 
+        return f"https://images.unsplash.com/photo-1548767797-d8c844163c4c{base_params}"
 
-    # 1. EMERGENCIAS / DANA
-    if any(x in text_content for x in ['dana', 'catastrofe', 'emergencia', 'inundaci']): 
-        return f"https://images.unsplash.com/photo-1639164631388-857f29935861{base_params}"
+    # 2. RESTO DE CATEGORIAS (Originales)
+    if any(x in text_content for x in ['dana', 'catastrofe', 'emergencia', 'inundaci']): return f"https://images.unsplash.com/photo-1639164631388-857f29935861{base_params}"
+    if any(x in text_content for x in ['eolic', 'viento', 'aerogenerador', 'wind']): return f"https://images.unsplash.com/photo-1548337138-e87d889cc369{base_params}"
+    if any(x in text_content for x in ['solar', 'fotov', 'placas']): return f"https://images.unsplash.com/photo-1756913454593-ac5cab482a7a{base_params}"
+    if any(x in text_content for x in ['moves', 'coche', 'vehiculo', 'puntos de recarga', 'automocion']): return f"https://images.unsplash.com/photo-1596731498067-99aeb581d3d7{base_params}"
+    if any(x in text_content for x in ['salud', 'sanitar', 'farma', 'medic', 'hospital', 'cancer']): return f"https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7{base_params}"
+    if any(x in text_content for x in ['indust', 'manufac', 'fabrica', 'maquina', 'cadena de valor']): return f"https://images.unsplash.com/photo-1581091226825-a6a2a5aee158{base_params}"
+    if any(x in text_content for x in ['educa', 'formaci', 'universidad', 'beca', 'lector', 'curso', 'fp', 'profesional']): return f"https://images.unsplash.com/photo-1524178232363-1fb2b075b655{base_params}"
+    if any(x in text_content for x in ['digital', 'ia ', 'softw', 'tic', 'cyber', 'ciber']): return f"https://images.unsplash.com/photo-1580894894513-541e068a3e2b{base_params}"
+    if any(x in text_content for x in ['agro', 'campo', 'forest', 'ganad', 'rural']): return f"https://images.unsplash.com/photo-1625246333195-78d9c38ad449{base_params}"
+    if any(x in text_content for x in ['turis', 'hotel', 'viaje', 'hostel']): return f"https://images.unsplash.com/photo-1551882547-ff40c63fe5fa{base_params}"
+    if any(x in text_content for x in ['construc', 'vivienda', 'rehab', 'edific']): return f"https://images.unsplash.com/photo-1503387762-592deb58ef4e{base_params}"
+    if any(x in text_content for x in ['maritimo', 'naval', 'barco', 'puerto', 'portuari', 'mercancia', 'transporte']): return f"https://images.unsplash.com/photo-1606185540834-d6e7483ee1a4{base_params}"
+    if any(x in text_content for x in ['hidro', 'repotencia', 'central', 'presa', 'agua']): return f"https://images.unsplash.com/photo-1642915064502-f9cfb135f347{base_params}"
+    if any(x in text_content for x in ['startup', 'emprende', 'idi', 'innovacion', 'tecnologic', 'investig']): return f"https://images.unsplash.com/photo-1519389950473-47ba0277781c{base_params}"
+    if any(x in text_content for x in ['cultur', 'patrimonio', 'historic', 'archivo', 'museo', 'arte']): return f"https://images.unsplash.com/photo-1765984990058-2f4a880bf9af{base_params}"
+    if any(x in text_content for x in ['paviment', 'calle', 'obra', 'asfalt', 'urbaniz']): return f"https://images.unsplash.com/photo-1762438441472-be21c5148e8a{base_params}"
+    if any(x in text_content for x in ['gas', 'combustible', 'hidrogeno', 'renovable', 'biogas']): return f"https://images.unsplash.com/photo-1654334036171-e01e52b2ce8e{base_params}"
+    if any(x in text_content for x in ['asesora', 'consultor', 'transformacion', 'kit digital']): return f"https://images.unsplash.com/photo-1454165804606-c3d57bc86b40{base_params}"
+    if any(x in text_content for x in ['joven', 'juvenil', 'estudiante', 'egresado', 'asociaci', 'federacion']): return f"https://images.unsplash.com/photo-1523240795612-9a054b0db644{base_params}"
 
-    # 2. ENERGÍA EÓLICA (Tu foto)
-    # Fíjate que pongo 'eolic' y 'aerogenerador' sin preocuparme de tildes
-    if any(x in text_content for x in ['eolic', 'viento', 'aerogenerador', 'wind']): 
-        return f"https://images.unsplash.com/photo-1548337138-e87d889cc369{base_params}"
-
-    # 3. ENERGÍA SOLAR / FOTOVOLTAICA
-    if any(x in text_content for x in ['solar', 'fotov', 'placas']): 
-        return f"https://images.unsplash.com/photo-1756913454593-ac5cab482a7a{base_params}"
-
-    # 4. MOVILIDAD / MOVES / COCHES
-    if any(x in text_content for x in ['moves', 'coche', 'vehiculo', 'puntos de recarga', 'automocion']): 
-        return f"https://images.unsplash.com/photo-1596731498067-99aeb581d3d7{base_params}"
-
-    # 5. SALUD / SOCIO-SANITARIO
-    if any(x in text_content for x in ['salud', 'sanitar', 'farma', 'medic', 'hospital', 'cancer']): 
-        return f"https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7{base_params}"
-
-    # 6. INDUSTRIA / CADENA DE VALOR
-    if any(x in text_content for x in ['indust', 'manufac', 'fabrica', 'maquina', 'cadena de valor']): 
-        return f"https://images.unsplash.com/photo-1581091226825-a6a2a5aee158{base_params}"
-
-    # 7. EDUCACIÓN / FORMACIÓN / LECTORADOS / BECAS
-    # Aquí 'formación' daría problemas, así que buscamos 'formaci' o 'formacion' (sin tilde gracias al truco)
-    if any(x in text_content for x in ['educa', 'formaci', 'universidad', 'beca', 'lector', 'curso', 'fp', 'profesional']): 
-        return f"https://images.unsplash.com/photo-1524178232363-1fb2b075b655{base_params}"
-
-    # 8. DIGITAL / IA / SOFTWARE
-    if any(x in text_content for x in ['digital', 'ia ', 'softw', 'tic', 'cyber', 'ciber']): 
-        return f"https://images.unsplash.com/photo-1580894894513-541e068a3e2b{base_params}"
-
-    # 9. AGRO / CAMPO
-    if any(x in text_content for x in ['agro', 'campo', 'forest', 'ganad', 'rural']): 
-        return f"https://images.unsplash.com/photo-1625246333195-78d9c38ad449{base_params}"
-
-    # 10. TURISMO
-    if any(x in text_content for x in ['turis', 'hotel', 'viaje', 'hostel']):
-        return f"https://images.unsplash.com/photo-1551882547-ff40c63fe5fa{base_params}"
-
-    # 11. CONSTRUCCIÓN / VIVIENDA
-    if any(x in text_content for x in ['construc', 'vivienda', 'rehab', 'edific']):
-        return f"https://images.unsplash.com/photo-1503387762-592deb58ef4e{base_params}"
-
-    # 12. MARITIMO / NAVAL (TU FOTO BARCO)
-    # Ahora detectará "Marítimo" aunque lleve tilde
-    if any(x in text_content for x in ['maritimo', 'naval', 'barco', 'puerto', 'portuari', 'mercancia', 'transporte']): 
-        return f"https://images.unsplash.com/photo-1606185540834-d6e7483ee1a4{base_params}"
-
-    # --- NUEVAS CATEGORÍAS ---
-
-    # 13. HIDROELÉCTRICA / REPOTENCIACIÓN
-    if any(x in text_content for x in ['hidro', 'repotencia', 'central', 'presa', 'agua']): 
-        return f"https://images.unsplash.com/photo-1642915064502-f9cfb135f347{base_params}"
-
-    # 14. I+D+i / STARTUPS
-    if any(x in text_content for x in ['startup', 'emprende', 'idi', 'innovacion', 'tecnologic', 'investig']): 
-        return f"https://images.unsplash.com/photo-1519389950473-47ba0277781c{base_params}"
-
-    # 15. CULTURA / PATRIMONIO
-    if any(x in text_content for x in ['cultur', 'patrimonio', 'historic', 'archivo', 'museo', 'arte']): 
-        return f"https://images.unsplash.com/photo-1765984990058-2f4a880bf9af{base_params}"
-
-    # 16. OBRAS CIVILES / PAVIMENTACIÓN
-    if any(x in text_content for x in ['paviment', 'calle', 'obra', 'asfalt', 'urbaniz']): 
-        return f"https://images.unsplash.com/photo-1762438441472-be21c5148e8a{base_params}"
-
-    # 17. COMBUSTIBLES / GAS
-    if any(x in text_content for x in ['gas', 'combustible', 'hidrogeno', 'renovable', 'biogas']): 
-        return f"https://images.unsplash.com/photo-1654334036171-e01e52b2ce8e{base_params}"
-
-    # 18. ASESORAMIENTO / DIGITALIZACIÓN
-    if any(x in text_content for x in ['asesora', 'consultor', 'transformacion', 'kit digital']): 
-        return f"https://images.unsplash.com/photo-1454165804606-c3d57bc86b40{base_params}"
-
-    # 19. JUVENTUD / ASOCIACIONES
-    if any(x in text_content for x in ['joven', 'juvenil', 'estudiante', 'egresado', 'asociaci', 'federacion']): 
-        return f"https://images.unsplash.com/photo-1523240795612-9a054b0db644{base_params}"
-
-    # DEFAULT
     return f"https://images.unsplash.com/photo-1497215728101-856f4ea42174{base_params}"
-    
+
 # ==============================================================================
 # 5. UI PRINCIPAL
 # ==============================================================================
@@ -472,72 +448,77 @@ if check_password():
         else:
             cols = st.columns(2)
             for i, (index, row) in enumerate(filtered_df.iterrows()):
-                titulo = row.iloc[1]
-                sector = row.iloc[5]
-                tags_raw = str(row.iloc[2]).split('|')
-                tags_html = "".join([f"<span class='titan-tag' style='{get_tag_bg(t.strip())}'>{t.strip()}</span>" for t in tags_raw if t.strip()])
-                cuantia = row.iloc[3]
-                plazo = row.iloc[4]
-                probabilidad = str(row.iloc[9]).strip().upper()
-                analisis_ia = row.iloc[6]
-                requisitos_txt = row.iloc[8]
-                link_boe = str(row.iloc[0])
-                img_url = get_img_url(sector, titulo)
-                
-                # Definir color del borde de la burbuja según probabilidad
-                badge_border = "rgba(16, 185, 129, 0.5)" if "ALTA" in probabilidad else ("rgba(245, 158, 11, 0.5)" if "MEDIA" in probabilidad else "rgba(148, 163, 184, 0.5)")
-                
-                # HTML DE LA TARJETA
-                card_html = f"""
-                <div class="titan-card">
-                    <div class="card-img-container">
-                        <img src="{img_url}" class="card-img">
-                        <div class="card-overlay"></div>
-                        <div class="card-badge" style="border-color:{badge_border};">● {probabilidad}</div>
-                    </div>
-                    <div class="card-body">
-                        <div>
-                            <div class="card-title" title="{titulo}">{titulo}</div>
-                            <div style="margin-bottom:10px;">{tags_html}</div>
-                        </div>
-                        <div class="specs-grid">
-                            <div class="spec-item"><span class="spec-label">Cuantía Disp.</span><span class="spec-value">{cuantia}</span></div>
-                            <div class="spec-item"><span class="spec-label">Cierre</span><span class="spec-value">{plazo}</span></div>
-                        </div>
-                    </div>
-                </div>
-                """
-                with cols[i % 2]:
-                    st.markdown(card_html, unsafe_allow_html=True)
+                # --- BLOQUE DE SEGURIDAD (TRY-EXCEPT) ---
+                try:
+                    titulo = row.iloc[1]
+                    sector = row.iloc[5]
+                    tags_raw = str(row.iloc[2]).split('|')
+                    tags_html = "".join([f"<span class='titan-tag' style='{get_tag_bg(t.strip())}'>{t.strip()}</span>" for t in tags_raw if t.strip()])
+                    cuantia = row.iloc[3]
+                    plazo = row.iloc[4]
+                    probabilidad = str(row.iloc[9]).strip().upper()
+                    analisis_ia = row.iloc[6]
+                    requisitos_txt = row.iloc[8]
+                    link_boe = str(row.iloc[0])
+                    img_url = get_img_url(sector, titulo)
                     
-                    with st.expander("🔬 INVESTIGACIÓN PROFUNDA & PDF"):
-                        key_investigacion = f"investigacion_{index}"
-                        if key_investigacion not in st.session_state:
-                            st.info("💡 Pulsa para analizar las Bases Oficiales en tiempo real.")
-                            if st.button("🔍 BUSCAR BASES REALES", key=f"ai_btn_{index}", use_container_width=True):
-                                with st.spinner("⏳ TITAN AI leyendo el BOE y extrayendo datos clave..."):
-                                    res_profundo = investigar_con_ia(titulo, link_boe)
-                                    st.session_state[key_investigacion] = res_profundo
-                                    st.rerun() 
-                        else:
-                            st.success("✅ Auditoría Completada")
-                            st.markdown(f"<div style='font-size:0.9rem; color:#475569'>{st.session_state[key_investigacion]}</div>", unsafe_allow_html=True)
-                            pdf_data = generar_pdf(titulo, analisis_ia, requisitos_txt, st.session_state[key_investigacion])
-                            st.download_button(label="📥 DESCARGAR INFORME PDF OFICIAL", data=pdf_data, file_name=f"Informe_Titan_{index}.pdf", mime="application/pdf", use_container_width=True, key=f"pdf_btn_{index}")
+                    badge_border = "rgba(16, 185, 129, 0.5)" if "ALTA" in probabilidad else ("rgba(245, 158, 11, 0.5)" if "MEDIA" in probabilidad else "rgba(148, 163, 184, 0.5)")
+                    
+                    # --- AQUI ESTA LA MAGIA: CHEQUEO SEGURO DE URGENCIA ---
+                    is_urgent = check_urgency(plazo)
+                    urgency_html = "<div class='urgency-badge'>🚨 CIERRE INMINENTE</div>" if is_urgent else ""
+                    style_cierre = "color: #ef4444; font-weight: bold;" if is_urgent else ""
 
-                    with st.expander("🔻 ANÁLISIS PREVIO", expanded=False):
-                        st.markdown(f"""<div style='background:var(--bg-app); padding:15px; border-radius:8px; border-left:3px solid var(--accent); color:var(--text-secondary);'>
-                            <h4 style='margin-top:0; color:var(--accent); font-size:0.9rem;'>🧠 SÍNTESIS INTELIGENTE</h4>{analisis_ia}</div>""", unsafe_allow_html=True)
-                        st.markdown("#### 📋 Requisitos")
-                        st.caption(str(requisitos_txt)[:300] + "...") 
-                        c_btn1, c_btn2 = st.columns([1,1])
-                        with c_btn1: st.link_button("📄 VER BOE", link_boe, use_container_width=True)
-                        with c_btn2: st.button("⭐ SEGUIR", key=f"fav_{index}", use_container_width=True)
-                    st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
+                    card_html = f"""
+                    <div class="titan-card">
+                        <div class="card-img-container">
+                            <img src="{img_url}" class="card-img">
+                            <div class="card-overlay"></div>
+                            {urgency_html}
+                            <div class="card-badge" style="border-color:{badge_border};">● {probabilidad}</div>
+                        </div>
+                        <div class="card-body">
+                            <div>
+                                <div class="card-title" title="{titulo}">{titulo}</div>
+                                <div style="margin-bottom:10px;">{tags_html}</div>
+                            </div>
+                            <div class="specs-grid">
+                                <div class="spec-item"><span class="spec-label">Cuantía Disp.</span><span class="spec-value">{cuantia}</span></div>
+                                <div class="spec-item"><span class="spec-label">Cierre</span><span class="spec-value" style="{style_cierre}">{plazo}</span></div>
+                            </div>
+                        </div>
+                    </div>
+                    """
+                    with cols[i % 2]:
+                        st.markdown(card_html, unsafe_allow_html=True)
+                        
+                        with st.expander("🔬 INVESTIGACIÓN PROFUNDA & PDF"):
+                            key_investigacion = f"investigacion_{index}"
+                            if key_investigacion not in st.session_state:
+                                st.info("💡 Pulsa para analizar las Bases Oficiales en tiempo real.")
+                                if st.button("🔍 BUSCAR BASES REALES", key=f"ai_btn_{index}", use_container_width=True):
+                                    with st.spinner("⏳ TITAN AI leyendo el BOE y extrayendo datos clave..."):
+                                        res_profundo = investigar_con_ia(titulo, link_boe)
+                                        st.session_state[key_investigacion] = res_profundo
+                                        st.rerun() 
+                            else:
+                                st.success("✅ Auditoría Completada")
+                                st.markdown(f"<div style='font-size:0.9rem; color:#475569'>{st.session_state[key_investigacion]}</div>", unsafe_allow_html=True)
+                                pdf_data = generar_pdf(titulo, analisis_ia, requisitos_txt, st.session_state[key_investigacion])
+                                st.download_button(label="📥 DESCARGAR INFORME PDF OFICIAL", data=pdf_data, file_name=f"Informe_Titan_{index}.pdf", mime="application/pdf", use_container_width=True, key=f"pdf_btn_{index}")
+
+                        with st.expander("🔻 ANÁLISIS PREVIO", expanded=False):
+                            st.markdown(f"""<div style='background:var(--bg-app); padding:15px; border-radius:8px; border-left:3px solid var(--accent); color:var(--text-secondary);'>
+                                <h4 style='margin-top:0; color:var(--accent); font-size:0.9rem;'>🧠 SÍNTESIS INTELIGENTE</h4>{analisis_ia}</div>""", unsafe_allow_html=True)
+                            st.markdown("#### 📋 Requisitos")
+                            st.caption(str(requisitos_txt)[:300] + "...") 
+                            c_btn1, c_btn2 = st.columns([1,1])
+                            with c_btn1: st.link_button("📄 VER BOE", link_boe, use_container_width=True)
+                            with c_btn2: st.button("⭐ SEGUIR", key=f"fav_{index}", use_container_width=True)
+                        st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
+                
+                except Exception as e:
+                    # Si falla una fila, la saltamos y pintamos la siguiente. 
+                    # ESTO EVITA QUE SE ROMPA LA WEB POR CULPA DE UNA MALA FECHA.
+                    continue
     else: st.error("DATABASE ERROR")
-
-
-
-
-
-
