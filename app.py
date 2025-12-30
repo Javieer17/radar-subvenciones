@@ -6,6 +6,7 @@ import plotly.express as px
 import time
 import re
 import os
+from datetime import datetime
 from groq import Groq
 from tavily import TavilyClient 
 from fpdf import FPDF
@@ -42,6 +43,7 @@ st.markdown("""
         --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
         --metric-bg: rgba(255, 255, 255, 0.7);
         --input-bg: #ffffff;
+        --urgent-red: #ef4444;
     }
 
     @media (prefers-color-scheme: dark) {
@@ -57,6 +59,17 @@ st.markdown("""
             --metric-bg: rgba(30, 41, 59, 0.7);
             --input-bg: #1e293b;
         }
+    }
+
+    /* --- ANIMACIÓN PARPADEO (CIERRE INMINENTE) --- */
+    @keyframes blinker {
+        50% { opacity: 0.3; }
+    }
+    .blink-urgent {
+        animation: blinker 1s linear infinite;
+        background: var(--urgent-red) !important;
+        color: white !important;
+        border: 2px solid white !important;
     }
 
     .stApp { font-family: 'Outfit', sans-serif; background-color: var(--bg-app); }
@@ -112,6 +125,7 @@ st.markdown("""
         box-shadow: var(--shadow-card);
         display: flex;
         flex-direction: column;
+        position: relative;
     }
     .titan-card:hover { transform: translateY(-8px); box-shadow: 0 20px 40px -5px rgba(0,0,0,0.15); border-color: var(--primary-btn); }
 
@@ -159,6 +173,21 @@ st.markdown("""
         border: 1px solid rgba(255, 255, 255, 0.15); 
         z-index: 20; 
         box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    /* Etiqueta de Urgencia (Izquierda) */
+    .urgency-badge {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        padding: 5px 12px;
+        border-radius: 8px;
+        font-size: 0.7rem;
+        font-family: 'Rajdhani', sans-serif;
+        font-weight: 800;
+        z-index: 21;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        text-transform: uppercase;
     }
 
     .card-body { padding: 20px; position: relative; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
@@ -344,36 +373,29 @@ if check_password():
     df = load_data()
     if df is not None:
         
-        # --- SIDEBAR (CON FILTROS EN CASCADA REALES) ---
+        # --- SIDEBAR ---
         with st.sidebar:
             if os.path.exists(LOGO_FILE): st.image(LOGO_FILE, use_container_width=True)
             st.markdown("### 🎛️ FILTROS")
             st.markdown("---")
             
-            # Búsqueda Textual Libre
             query = st.text_input("Búsqueda Textual", placeholder="Ej: Digitalización...", key="search_bar")
             
-            # --- LÓGICA DE CASCADA (COLUMNA K -> COLUMNA F) ---
-            
-            # 1. PASO: TIPO DE BENEFICIARIO (Columna K es índice 10)
+            # --- LÓGICA DE CASCADA ---
             beneficiarios_list = sorted(df.iloc[:, 10].dropna().astype(str).unique())
             sel_beneficiario = st.multiselect("1. Tipo de Beneficiario", beneficiarios_list)
             
-            # Creamos un dataframe temporal basado en la elección del beneficiario
             df_cascade = df.copy()
             if sel_beneficiario:
                 df_cascade = df_cascade[df_cascade.iloc[:, 10].astype(str).isin(sel_beneficiario)]
             
-            # 2. PASO: SECTOR ESTRATÉGICO (Columna F es índice 5)
-            # Solo muestra sectores que correspondan a esos beneficiarios
             sectores_disponibles = sorted(df_cascade.iloc[:, 5].dropna().astype(str).unique())
             sel_sector = st.multiselect("2. Sector Estratégico", sectores_disponibles)
             
-            # 3. EXTRA: PROBABILIDAD (Columna J es índice 9)
             probs_unicas = sorted(df.iloc[:, 9].astype(str).unique())
             sel_prob = st.multiselect("Probabilidad de Éxito", probs_unicas)
             
-            # --- APLICACIÓN FINAL DE FILTROS ---
+            # Aplicación final de filtros
             filtered_df = df.copy()
             if query: 
                 filtered_df = filtered_df[filtered_df.apply(lambda r: r.astype(str).str.contains(query, case=False).any(), axis=1)]
@@ -430,26 +452,56 @@ if check_password():
             st.info("⚠️ No hay resultados que coincidan con tus filtros.")
         else:
             cols = st.columns(2)
+            today = datetime.now()
+            
             for i, (index, row) in enumerate(filtered_df.iterrows()):
                 titulo = row.iloc[1]
                 sector = row.iloc[5]
                 tags_raw = str(row.iloc[2]).split('|')
                 tags_html = "".join([f"<span class='titan-tag' style='{get_tag_bg(t.strip())}'>{t.strip()}</span>" for t in tags_raw if t.strip()])
                 cuantia = row.iloc[3]
-                plazo = row.iloc[4]
+                plazo_raw = str(row.iloc[4])
                 probabilidad = str(row.iloc[9]).strip().upper()
                 analisis_ia = row.iloc[6]
                 requisitos_txt = row.iloc[8]
                 link_boe = str(row.iloc[0])
                 img_url = get_img_url(sector, titulo)
                 
+                # --- LÓGICA DE ALERTA Y FECHAS (COLUMNA E) ---
+                urgency_label = ""
+                urgency_class = ""
+                plazo_style = ""
+                
+                try:
+                    # Intentar convertir el plazo a fecha (formato dd/mm/yyyy)
+                    deadline_dt = datetime.strptime(plazo_raw, "%d/%m/%Y")
+                    delta_days = (deadline_dt - today).days
+                    
+                    if delta_days < 0:
+                        urgency_label = "🚫 FUERA DE PLAZO (CADUCADA)"
+                        urgency_class = "background: #64748b; color: white;" # Gris
+                        plazo_style = "color: #94a3b8; text-decoration: line-through;"
+                    elif delta_days <= 7:
+                        urgency_label = "🚨 CIERRE INMINENTE"
+                        urgency_class = "blink-urgent" # Clase con parpadeo rojo
+                        plazo_style = "color: var(--urgent-red); font-weight: 900;"
+                    else:
+                        urgency_label = f"⏳ Faltan {delta_days} días"
+                        urgency_class = "background: #3b82f6; color: white;" # Azul
+                except:
+                    # Si no es fecha (ej: "No especificada")
+                    urgency_label = "ℹ️ CONVOCATORIA ABIERTA"
+                    urgency_class = "background: #10b981; color: white;" # Verde
+
                 badge_border = "rgba(16, 185, 129, 0.5)" if "ALTA" in probabilidad else ("rgba(245, 158, 11, 0.5)" if "MEDIA" in probabilidad else "rgba(148, 163, 184, 0.5)")
                 
+                # HTML DE LA TARJETA MEJORADO
                 card_html = f"""
                 <div class="titan-card">
                     <div class="card-img-container">
                         <img src="{img_url}" class="card-img">
                         <div class="card-overlay"></div>
+                        <div class="urgency-badge {urgency_class}">{urgency_label}</div>
                         <div class="card-badge" style="border-color:{badge_border};">● {probabilidad}</div>
                     </div>
                     <div class="card-body">
@@ -459,7 +511,10 @@ if check_password():
                         </div>
                         <div class="specs-grid">
                             <div class="spec-item"><span class="spec-label">Cuantía Disp.</span><span class="spec-value">{cuantia}</span></div>
-                            <div class="spec-item"><span class="spec-label">Cierre</span><span class="spec-value">{plazo}</span></div>
+                            <div class="spec-item">
+                                <span class="spec-label">Cierre</span>
+                                <span class="spec-value" style="{plazo_style}">{plazo_raw}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -483,6 +538,9 @@ if check_password():
                             st.download_button(label="📥 DESCARGAR INFORME PDF OFICIAL", data=pdf_data, file_name=f"Informe_Titan_{index}.pdf", mime="application/pdf", use_container_width=True, key=f"pdf_btn_{index}")
 
                     with st.expander("🔻 ANÁLISIS PREVIO", expanded=False):
+                        if "FUERA DE PLAZO" in urgency_label:
+                            st.warning("⚠️ Esta oportunidad ya ha cerrado. Pronto será retirada de la plataforma.")
+                        
                         st.markdown(f"""<div style='background:var(--bg-app); padding:15px; border-radius:8px; border-left:3px solid var(--accent); color:var(--text-secondary);'>
                             <h4 style='margin-top:0; color:var(--accent); font-size:0.9rem;'>🧠 SÍNTESIS INTELIGENTE</h4>{analisis_ia}</div>""", unsafe_allow_html=True)
                         st.markdown("#### 📋 Requisitos")
