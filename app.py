@@ -69,7 +69,7 @@ st.markdown("""
         animation: blinker 1s linear infinite;
         background: var(--urgent-red) !important;
         color: white !important;
-        border: 2px solid white !important;
+        border: 1px solid white !important;
     }
 
     .stApp { font-family: 'Outfit', sans-serif; background-color: var(--bg-app); }
@@ -155,39 +155,34 @@ st.markdown("""
         pointer-events: none;
     }
 
-    .card-badge {
+    /* Etiqueta Común (Badge Base) */
+    .card-badge, .urgency-badge {
         position: absolute; 
         top: 12px; 
-        right: 12px; 
         background: rgba(15, 23, 42, 0.8); 
         backdrop-filter: blur(8px); 
         -webkit-backdrop-filter: blur(8px);
         color: #ffffff !important; 
-        padding: 5px 12px;
+        padding: 5px 14px;
         border-radius: 8px; 
-        font-size: 0.7rem; 
         font-family: 'Rajdhani', sans-serif; 
         font-weight: 800;
         text-transform: uppercase;
         letter-spacing: 1px;
         border: 1px solid rgba(255, 255, 255, 0.15); 
-        z-index: 20; 
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        z-index: 22; 
+        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
     }
 
-    /* Etiqueta de Urgencia (Izquierda) */
+    .card-badge { right: 12px; font-size: 0.75rem; }
+
+    /* Etiqueta de Urgencia (Izquierda) - MEJORADA */
     .urgency-badge {
-        position: absolute;
-        top: 12px;
         left: 12px;
-        padding: 5px 12px;
-        border-radius: 8px;
-        font-size: 0.7rem;
-        font-family: 'Rajdhani', sans-serif;
-        font-weight: 800;
-        z-index: 21;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        text-transform: uppercase;
+        font-size: 0.85rem; /* Tamaño de letra más grande */
+        display: flex;
+        align-items: center;
+        gap: 6px;
     }
 
     .card-body { padding: 20px; position: relative; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
@@ -473,25 +468,23 @@ if check_password():
                 plazo_style = ""
                 
                 try:
-                    # Intentar convertir el plazo a fecha (formato dd/mm/yyyy)
                     deadline_dt = datetime.strptime(plazo_raw, "%d/%m/%Y")
                     delta_days = (deadline_dt - today).days
                     
                     if delta_days < 0:
-                        urgency_label = "🚫 FUERA DE PLAZO (CADUCADA)"
-                        urgency_class = "background: #64748b; color: white;" # Gris
+                        urgency_label = "🚫 FUERA DE PLAZO"
+                        urgency_class = "border-color: #64748b;" 
                         plazo_style = "color: #94a3b8; text-decoration: line-through;"
                     elif delta_days <= 7:
                         urgency_label = "🚨 CIERRE INMINENTE"
-                        urgency_class = "blink-urgent" # Clase con parpadeo rojo
+                        urgency_class = "blink-urgent" 
                         plazo_style = "color: var(--urgent-red); font-weight: 900;"
                     else:
-                        urgency_label = f"⏳ Faltan {delta_days} días"
-                        urgency_class = "background: #3b82f6; color: white;" # Azul
+                        urgency_label = f"⌛ FALTAN {delta_days} DÍAS"
+                        urgency_class = "" 
                 except:
-                    # Si no es fecha (ej: "No especificada")
                     urgency_label = "ℹ️ CONVOCATORIA ABIERTA"
-                    urgency_class = "background: #10b981; color: white;" # Verde
+                    urgency_class = ""
 
                 badge_border = "rgba(16, 185, 129, 0.5)" if "ALTA" in probabilidad else ("rgba(245, 158, 11, 0.5)" if "MEDIA" in probabilidad else "rgba(148, 163, 184, 0.5)")
                 
