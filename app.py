@@ -7,7 +7,7 @@ import time
 import re
 import os
 from groq import Groq
-from tavily import TavilyClient # RESTAURADO: Importación original
+from tavily import TavilyClient 
 from fpdf import FPDF
 
 # ==============================================================================
@@ -344,39 +344,45 @@ if check_password():
     df = load_data()
     if df is not None:
         
-        # --- SIDEBAR (CON FILTROS EN CASCADA IMPLEMENTADOS) ---
+        # --- SIDEBAR (CON FILTROS EN CASCADA REALES) ---
         with st.sidebar:
             if os.path.exists(LOGO_FILE): st.image(LOGO_FILE, use_container_width=True)
-            st.markdown("### 🎛️ FILTROS AVANZADOS")
+            st.markdown("### 🎛️ FILTROS")
             st.markdown("---")
             
-            # Búsqueda Textual
+            # Búsqueda Textual Libre
             query = st.text_input("Búsqueda Textual", placeholder="Ej: Digitalización...", key="search_bar")
             
-            # --- INICIO CASCADA ---
-            # 1. TIPO DE BENEFICIARIO (Columna 7)
-            beneficiarios_unicos = sorted(df.iloc[:, 7].dropna().astype(str).unique())
-            sel_beneficiario = st.multiselect("Beneficiario", beneficiarios_unicos)
+            # --- LÓGICA DE CASCADA (COLUMNA K -> COLUMNA F) ---
             
-            # Filtrado temporal para el segundo paso de la cascada
-            df_temp = df.copy()
+            # 1. PASO: TIPO DE BENEFICIARIO (Columna K es índice 10)
+            beneficiarios_list = sorted(df.iloc[:, 10].dropna().astype(str).unique())
+            sel_beneficiario = st.multiselect("1. Tipo de Beneficiario", beneficiarios_list)
+            
+            # Creamos un dataframe temporal basado en la elección del beneficiario
+            df_cascade = df.copy()
             if sel_beneficiario:
-                df_temp = df_temp[df_temp.iloc[:, 7].astype(str).isin(sel_beneficiario)]
+                df_cascade = df_cascade[df_cascade.iloc[:, 10].astype(str).isin(sel_beneficiario)]
             
-            # 2. SECTOR ESTRATÉGICO (Columna 5 - Actualizado dinámicamente)
-            sectores_actualizados = sorted(df_temp.iloc[:, 5].dropna().astype(str).unique())
-            sel_sector = st.multiselect("Sector Estratégico", sectores_actualizados)
+            # 2. PASO: SECTOR ESTRATÉGICO (Columna F es índice 5)
+            # Solo muestra sectores que correspondan a esos beneficiarios
+            sectores_disponibles = sorted(df_cascade.iloc[:, 5].dropna().astype(str).unique())
+            sel_sector = st.multiselect("2. Sector Estratégico", sectores_disponibles)
             
-            # 3. PROBABILIDAD (General)
+            # 3. EXTRA: PROBABILIDAD (Columna J es índice 9)
             probs_unicas = sorted(df.iloc[:, 9].astype(str).unique())
             sel_prob = st.multiselect("Probabilidad de Éxito", probs_unicas)
             
-            # Aplicación de filtros finales
+            # --- APLICACIÓN FINAL DE FILTROS ---
             filtered_df = df.copy()
-            if query: filtered_df = filtered_df[filtered_df.apply(lambda r: r.astype(str).str.contains(query, case=False).any(), axis=1)]
-            if sel_beneficiario: filtered_df = filtered_df[filtered_df.iloc[:, 7].astype(str).isin(sel_beneficiario)]
-            if sel_sector: filtered_df = filtered_df[filtered_df.iloc[:, 5].astype(str).isin(sel_sector)]
-            if sel_prob: filtered_df = filtered_df[filtered_df.iloc[:, 9].astype(str).isin(sel_prob)]
+            if query: 
+                filtered_df = filtered_df[filtered_df.apply(lambda r: r.astype(str).str.contains(query, case=False).any(), axis=1)]
+            if sel_beneficiario: 
+                filtered_df = filtered_df[filtered_df.iloc[:, 10].astype(str).isin(sel_beneficiario)]
+            if sel_sector: 
+                filtered_df = filtered_df[filtered_df.iloc[:, 5].astype(str).isin(sel_sector)]
+            if sel_prob: 
+                filtered_df = filtered_df[filtered_df.iloc[:, 9].astype(str).isin(sel_prob)]
             
             st.markdown("---")
             st.markdown("### 📥 EXPORTAR")
