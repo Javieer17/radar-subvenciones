@@ -7,7 +7,7 @@ import time
 import re
 import os
 from groq import Groq
-from src.tavily import TavilyClient # Ajustado según importación estándar o local
+from tavily import TavilyClient # RESTAURADO: Importación original
 from fpdf import FPDF
 
 # ==============================================================================
@@ -69,7 +69,7 @@ st.markdown("""
         font-size: 3rem; font-weight: 900; margin-bottom: 0px;
     }
 
-    /* --- ESTILOS DE KPIS (RESTAURADOS Y MEJORADOS) --- */
+    /* --- ESTILOS DE KPIS --- */
     div[data-testid="metric-container"] {
         background-color: var(--metric-bg); 
         border: 1px solid var(--card-border);
@@ -85,7 +85,6 @@ st.markdown("""
         box-shadow: 0 8px 20px rgba(0,0,0,0.1);
     }
     
-    /* El número grande con degradado */
     [data-testid="stMetricValue"] { 
         font-family: 'Rajdhani', sans-serif !important; 
         font-size: 2.5rem !important;
@@ -94,7 +93,6 @@ st.markdown("""
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
     }
-    /* La etiqueta pequeña */
     [data-testid="stMetricLabel"] { 
         color: var(--text-secondary) !important; 
         font-weight: 600 !important;
@@ -103,7 +101,6 @@ st.markdown("""
         letter-spacing: 1px;
     }
 
-    /* --- TARJETAS TITAN --- */
     .titan-card {
         background: var(--card-bg); 
         border-radius: 16px; 
@@ -118,20 +115,19 @@ st.markdown("""
     }
     .titan-card:hover { transform: translateY(-8px); box-shadow: 0 20px 40px -5px rgba(0,0,0,0.15); border-color: var(--primary-btn); }
 
-    /* --- CONTENEDOR DE IMAGEN (ARREGLADO AJUSTE) --- */
     .card-img-container { 
         position: relative; 
         height: 180px; 
-        width: 100%; /* Forzar ancho completo */
+        width: 100%; 
         overflow: hidden;
-        background-color: #0f172a; /* Fondo oscuro base */
+        background-color: #0f172a; 
         border-bottom: 1px solid var(--card-border);
     }
     
     .card-img { 
-        width: 100% !important; /* CRUCIAL: Ocupar todo el ancho */
-        height: 100% !important; /* CRUCIAL: Ocupar todo el alto */
-        object-fit: cover !important; /* CRUCIAL: Recortar sin deformar */
+        width: 100% !important; 
+        height: 100% !important; 
+        object-fit: cover !important; 
         object-position: center;
         display: block;
         transition: transform 0.5s ease; 
@@ -145,12 +141,11 @@ st.markdown("""
         pointer-events: none;
     }
 
-    /* --- BURBUJA (BADGE) --- */
     .card-badge {
         position: absolute; 
         top: 12px; 
         right: 12px; 
-        background: rgba(15, 23, 42, 0.8); /* Más opaco para leerse mejor */
+        background: rgba(15, 23, 42, 0.8); 
         backdrop-filter: blur(8px); 
         -webkit-backdrop-filter: blur(8px);
         color: #ffffff !important; 
@@ -295,9 +290,6 @@ def get_tag_bg(tag):
     if "bonif" in t: return "background: linear-gradient(90deg, #7c3aed, #6d28d9);"
     return "background: #475569;"
 
-# ==============================================================================
-#  IMÁGENES CORREGIDAS (IDS ESTÁTICOS DE UNSPLASH)
-# ==============================================================================
 def get_img_url(sector, titulo):
     text_content = (str(sector) + " " + str(titulo)).lower()
     replacements = (("á", "a"), ("é", "e"), ("í", "i"), ("ó", "o"), ("ú", "u"), ("ü", "u"), ("ñ", "n"))
@@ -352,43 +344,39 @@ if check_password():
     df = load_data()
     if df is not None:
         
-        # --- SIDEBAR (CON FILTROS EN CASCADA) ---
+        # --- SIDEBAR (CON FILTROS EN CASCADA IMPLEMENTADOS) ---
         with st.sidebar:
             if os.path.exists(LOGO_FILE): st.image(LOGO_FILE, use_container_width=True)
-            st.markdown("### 🎛️ FILTROS INTELIGENTES")
+            st.markdown("### 🎛️ FILTROS AVANZADOS")
             st.markdown("---")
             
-            # 1. Búsqueda Textual
+            # Búsqueda Textual
             query = st.text_input("Búsqueda Textual", placeholder="Ej: Digitalización...", key="search_bar")
             
-            # --- LÓGICA DE CASCADA ---
-            # 2. Primer Filtro: Tipo de Beneficiario (Se asume columna index 7 basándose en estructura)
+            # --- INICIO CASCADA ---
+            # 1. TIPO DE BENEFICIARIO (Columna 7)
             beneficiarios_unicos = sorted(df.iloc[:, 7].dropna().astype(str).unique())
-            sel_beneficiario = st.multiselect("1. Tipo de Beneficiario", beneficiarios_unicos)
+            sel_beneficiario = st.multiselect("Beneficiario", beneficiarios_unicos)
             
-            # Filtro temporal para obtener los sectores disponibles según el beneficiario
-            temp_df = df.copy()
+            # Filtrado temporal para el segundo paso de la cascada
+            df_temp = df.copy()
             if sel_beneficiario:
-                temp_df = temp_df[temp_df.iloc[:, 7].astype(str).isin(sel_beneficiario)]
+                df_temp = df_temp[df_temp.iloc[:, 7].astype(str).isin(sel_beneficiario)]
             
-            # 3. Segundo Filtro: Sector Estratégico (Actualizado por beneficiario)
-            sectores_disponibles = sorted(temp_df.iloc[:, 5].dropna().astype(str).unique())
-            sel_sector = st.multiselect("2. Sector Estratégico", sectores_disponibles)
+            # 2. SECTOR ESTRATÉGICO (Columna 5 - Actualizado dinámicamente)
+            sectores_actualizados = sorted(df_temp.iloc[:, 5].dropna().astype(str).unique())
+            sel_sector = st.multiselect("Sector Estratégico", sectores_actualizados)
             
-            # 4. Tercer Filtro: Probabilidad (General)
+            # 3. PROBABILIDAD (General)
             probs_unicas = sorted(df.iloc[:, 9].astype(str).unique())
             sel_prob = st.multiselect("Probabilidad de Éxito", probs_unicas)
             
-            # APLICACIÓN FINAL DE FILTROS AL DATAFRAME PRINCIPAL
+            # Aplicación de filtros finales
             filtered_df = df.copy()
-            if query: 
-                filtered_df = filtered_df[filtered_df.apply(lambda r: r.astype(str).str.contains(query, case=False).any(), axis=1)]
-            if sel_beneficiario: 
-                filtered_df = filtered_df[filtered_df.iloc[:, 7].astype(str).isin(sel_beneficiario)]
-            if sel_sector: 
-                filtered_df = filtered_df[filtered_df.iloc[:, 5].astype(str).isin(sel_sector)]
-            if sel_prob: 
-                filtered_df = filtered_df[filtered_df.iloc[:, 9].astype(str).isin(sel_prob)]
+            if query: filtered_df = filtered_df[filtered_df.apply(lambda r: r.astype(str).str.contains(query, case=False).any(), axis=1)]
+            if sel_beneficiario: filtered_df = filtered_df[filtered_df.iloc[:, 7].astype(str).isin(sel_beneficiario)]
+            if sel_sector: filtered_df = filtered_df[filtered_df.iloc[:, 5].astype(str).isin(sel_sector)]
+            if sel_prob: filtered_df = filtered_df[filtered_df.iloc[:, 9].astype(str).isin(sel_prob)]
             
             st.markdown("---")
             st.markdown("### 📥 EXPORTAR")
@@ -421,7 +409,6 @@ if check_password():
                     sector_counts.columns = ['Sector', 'Count']
                     fig1 = px.pie(sector_counts, values='Count', names='Sector', hole=0.6, color_discrete_sequence=px.colors.sequential.Bluyl)
                     fig1.update_layout(title_text="Distribución por Sector", height=350, margin=dict(l=20, r=20, t=40, b=20), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", showlegend=False)
-                    fig1.update_traces(hovertemplate='<b>%{label}</b><br>Cantidad: %{value}<br>(%{percent})')
                     st.plotly_chart(fig1, use_container_width=True)
                 with g2:
                     prob_counts = filtered_df.iloc[:, 9].value_counts().reset_index()
@@ -479,7 +466,7 @@ if check_password():
                         if key_investigacion not in st.session_state:
                             st.info("💡 Pulsa para analizar las Bases Oficiales en tiempo real.")
                             if st.button("🔍 BUSCAR BASES REALES", key=f"ai_btn_{index}", use_container_width=True):
-                                with st.spinner("⏳ TITAN AI leyendo el BOE y extrayendo datos clave..."):
+                                with st.spinner("⏳ TITAN AI leyendo el BOE..."):
                                     res_profundo = investigar_con_ia(titulo, link_boe)
                                     st.session_state[key_investigacion] = res_profundo
                                     st.rerun() 
