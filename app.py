@@ -265,17 +265,73 @@ def get_tag_bg(tag):
     if "prestamo" in t: return "background: linear-gradient(90deg, #d97706, #b45309);"
     if "bonif" in t: return "background: linear-gradient(90deg, #7c3aed, #6d28d9);"
     return "background: #475569;"
-
+# ==============================================================================
+#  IMAGENES
+# ==============================================================================
 def get_img_url(sector, titulo):
+    # Convertimos todo a minúsculas para buscar palabras clave
     c = (str(sector) + " " + str(titulo)).lower()
-    if any(x in c for x in ['dana', 'emergencia', 'catastrofe']): return "https://images.unsplash.com/photo-1628135804791-c0a6b490f898?auto=format&fit=crop&w=800&q=80"
-    if any(x in c for x in ['solar', 'fotov', 'renovab']): return "https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&w=800&q=80"
-    if any(x in c for x in ['eolic', 'viento']): return "https://images.unsplash.com/photo-1532601224476-15c79f2f7a51?auto=format&fit=crop&w=800&q=80"
-    if any(x in c for x in ['indust', 'fabrica', 'maq']): return "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=80"
-    if any(x in c for x in ['tech', 'digital', 'ia ', 'software']): return "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80"
-    if any(x in c for x in ['agro', 'campo', 'ganad']): return "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?auto=format&fit=crop&w=800&q=80"
-    if any(x in c for x in ['auto', 'movil', 'transp']): return "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&w=800&q=80"
-    if any(x in c for x in ['invest', 'ciencia', 'idi']): return "https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=800&q=80"
+    
+    # --- 1. SECTOR EÓLICO (TU CAMBIO) ---
+    # He puesto tu enlace de Unsplash. Fíjate que al final pongo w=800 para que no pese mucho.
+    if any(x in c for x in ['eolic', 'viento', 'wind']): 
+        return "https://images.unsplash.com/photo-1548337138-e87d889cc369?auto=format&fit=crop&w=800&q=80"
+
+    # --- 2. EMERGENCIAS / DANA ---
+    if any(x in c for x in ['dana', 'emergencia', 'catastrofe']): 
+        return "https://images.unsplash.com/photo-1628135804791-c0a6b490f898?auto=format&fit=crop&w=800&q=80"
+
+    # --- 3. SOLAR / FOTOVOLTAICA ---
+    if any(x in c for x in ['solar', 'fotov', 'renovab']): 
+        return "https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&w=800&q=80"
+
+    # --- 4. INDUSTRIA ---
+    if any(x in c for x in ['indust', 'fabrica', 'maq']): 
+        return "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=80"
+
+    # --- 5. TECNOLOGÍA / DIGITAL ---
+    if any(x in c for x in ['tech', 'digital', 'ia ', 'software', 'tic']): 
+        return "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80"
+
+    # --- 6. AGROALIMENTARIO ---
+    if any(x in c for x in ['agro', 'campo', 'ganad', 'pesca']): 
+        return "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?auto=format&fit=crop&w=800&q=80"
+
+    # --- 7. AUTOMOCIÓN / TRANSPORTE ---
+    if any(x in c for x in ['auto', 'movil', 'transp', 'vehiculo']): 
+        return "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&w=800&q=80"
+
+    # --- 8. I+D+i / CIENCIA ---
+    if any(x in c for x in ['invest', 'ciencia', 'idi', 'biotec']): 
+        return "https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=800&q=80"
+        
+    # =================================================================
+    # --- NUEVOS SECTORES AÑADIDOS (EJEMPLOS PARA TI) ---
+    # =================================================================
+    
+    # A. TURISMO Y HOSTELERÍA
+    if any(x in c for x in ['turis', 'hotel', 'viaje', 'hostel']):
+        return "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
+
+    # B. CONSTRUCCIÓN Y VIVIENDA
+    if any(x in c for x in ['construc', 'vivienda', 'rehab', 'edific']):
+        return "https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=800&q=80"
+        
+    # C. CULTURA Y ARTE
+    if any(x in c for x in ['cultur', 'arte', 'museo', 'teatro']):
+        return "https://images.unsplash.com/photo-1499364660878-4a307952fb99?auto=format&fit=crop&w=800&q=80"
+
+    # D. EMPLEO Y FORMACIÓN
+    if any(x in c for x in ['empleo', 'contrata', 'formaci', 'rrhh']):
+        return "https://images.unsplash.com/photo-1521791136064-7986c2920216?auto=format&fit=crop&w=800&q=80"
+
+    # E. MARITIMO
+
+    if any(x in c for x in ['mar', 'naval', 'barco', 'portuari']): 
+    return "https://images.unsplash.com/photo-1598194501777-edbff942e501?q=80&w=1169&auto=format&fit=crop&w=800&q=80"
+
+    # --- IMAGEN POR DEFECTO (Si no coincide con nada) ---
+    # He puesto una de oficina moderna genérica
     return "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80"
 
 # ==============================================================================
@@ -424,3 +480,4 @@ if check_password():
                         with c_btn2: st.button("⭐ SEGUIR", key=f"fav_{index}", use_container_width=True)
                     st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
     else: st.error("DATABASE ERROR")
+
