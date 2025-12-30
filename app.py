@@ -4,8 +4,8 @@ import requests
 import io
 import plotly.express as px
 import time
-import re  # IMPORTANTE PARA LIMPIAR EL PDF
-import os  # Para verificar si existe el logo
+import re
+import os
 from groq import Groq
 from tavily import TavilyClient
 from fpdf import FPDF
@@ -13,7 +13,6 @@ from fpdf import FPDF
 # ==============================================================================
 # 0. CONFIGURACIÓN GLOBAL Y LOGO
 # ==============================================================================
-# 🔴 IMPORTANTE: Guarda tu imagen como "logo.png" en la misma carpeta que este código
 LOGO_FILE = "logo.png" 
 
 st.set_page_config(
@@ -31,7 +30,7 @@ st.markdown("""
     /* IMPORTACIÓN DE FUENTES */
     @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Outfit:wght@300;400;700;900&display=swap');
 
-    /* --- VARIABLES DE COLORES DINÁMICAS --- */
+    /* --- VARIABLES DE COLORES --- */
     :root {
         --bg-app: #f8fafc;
         --card-bg: #ffffff;
@@ -75,64 +74,73 @@ st.markdown("""
         padding: 15px 20px; border-radius: 12px; backdrop-filter: blur(10px);
         box-shadow: var(--shadow-card);
     }
-    div[data-testid="metric-container"]:hover { border-color: var(--accent); transform: translateY(-2px); }
-    [data-testid="stMetricValue"] { font-family: 'Rajdhani', sans-serif !important; font-weight: 700; color: var(--accent) !important; }
-    [data-testid="stMetricLabel"] { color: var(--text-secondary) !important; }
-
+    
+    /* --- TARJETAS TITAN --- */
     .titan-card {
-        background: var(--card-bg); border-radius: 16px; border: 1px solid var(--card-border);
-        overflow: hidden; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        margin-bottom: 20px; height: 100%; box-shadow: var(--shadow-card);
+        background: var(--card-bg); 
+        border-radius: 16px; 
+        border: 1px solid var(--card-border);
+        overflow: hidden; 
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        margin-bottom: 20px; 
+        height: 100%; 
+        box-shadow: var(--shadow-card);
+        display: flex;
+        flex-direction: column;
     }
     .titan-card:hover { transform: translateY(-8px); box-shadow: 0 20px 40px -5px rgba(0,0,0,0.15); border-color: var(--primary-btn); }
 
-    /* --- INICIO ZONA MODIFICADA (IMAGEN Y BURBUJA) --- */
+    /* --- CONTENEDOR DE IMAGEN (SOLUCIÓN DE AJUSTE) --- */
     .card-img-container { 
         position: relative; 
         height: 180px; 
+        width: 100%;
         overflow: hidden;
-        border-radius: 16px 16px 0 0; /* Asegura esquinas redondeadas arriba */
+        background-color: #1e293b; /* Fondo oscuro por si falla la carga */
     }
+    
     .card-img { 
         width: 100%; 
         height: 100%; 
         object-fit: cover; 
+        object-position: center;
         transition: transform 0.5s ease; 
-        filter: brightness(0.95); 
+        filter: brightness(0.9); 
     }
     .titan-card:hover .card-img { transform: scale(1.1); filter: brightness(1.05); }
 
     .card-overlay { 
-        position: absolute; bottom: 0; left: 0; right: 0; height: 80px; 
-        background: linear-gradient(to top, var(--card-bg), transparent); 
+        position: absolute; bottom: 0; left: 0; right: 0; height: 100%; 
+        background: linear-gradient(to top, var(--card-bg) 0%, transparent 60%); 
         pointer-events: none;
     }
 
+    /* --- BURBUJA (BADGE) CORREGIDA --- */
     .card-badge {
         position: absolute; 
-        top: 15px; 
-        right: 15px; 
-        /* FONDO GLASSMORPHISM OSCURO */
-        background: rgba(15, 23, 42, 0.65);
-        backdrop-filter: blur(8px); 
-        -webkit-backdrop-filter: blur(8px);
+        top: 12px; 
+        right: 12px; 
+        background: rgba(15, 23, 42, 0.75); /* Fondo oscuro sólido pero transparente */
+        backdrop-filter: blur(6px); 
+        -webkit-backdrop-filter: blur(6px);
         color: #ffffff !important; 
-        padding: 5px 12px;
-        border-radius: 12px; 
-        font-size: 0.7rem; 
+        padding: 4px 10px;
+        border-radius: 8px; 
+        font-size: 0.65rem; 
         font-family: 'Rajdhani', sans-serif; 
-        font-weight: 700;
-        border: 1px solid rgba(255,255,255,0.15); 
-        z-index: 10; 
-        box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-        letter-spacing: 0.5px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        border: 1px solid rgba(255, 255, 255, 0.2); 
+        z-index: 20; 
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
-    /* --- FIN ZONA MODIFICADA --- */
 
-    .card-body { padding: 20px; position: relative; }
+    .card-body { padding: 20px; position: relative; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
+    
     .card-title {
-        color: var(--text-primary); font-weight: 800; font-size: 1.1rem; line-height: 1.4;
-        margin-bottom: 12px; min-height: 3.2rem; display: -webkit-box; -webkit-line-clamp: 2;
+        color: var(--text-primary); font-weight: 800; font-size: 1.1rem; line-height: 1.3;
+        margin-bottom: 12px; min-height: 2.8rem; display: -webkit-box; -webkit-line-clamp: 2;
         -webkit-box-orient: vertical; overflow: hidden;
     }
 
@@ -166,7 +174,7 @@ def check_password():
     return True
 
 # ==============================================================================
-# 4. LÓGICA DE DATOS Y NUEVAS FUNCIONES IA (LIMPIAS)
+# 4. LÓGICA Y HERRAMIENTAS
 # ==============================================================================
 @st.cache_data(ttl=600)
 def load_data():
@@ -184,67 +192,40 @@ def investigar_con_ia(titulo, link_boe):
     try:
         tavily = TavilyClient(api_key=st.secrets["tavily_key"])
         client = Groq(api_key=st.secrets["groq_key"])
-        
         search_query = f"requisitos beneficiarios exclusiones bases reguladoras {titulo} oficial"
         busqueda = tavily.search(query=search_query, search_depth="basic", max_results=3)
         contexto = "\n".join([f"Fuente: {r['url']}\nContenido: {r['content']}" for r in busqueda['results']])
-
-        # Instrucción explícita a la IA para que sea limpia
         prompt = f"""Eres un Consultor Senior. Analiza: {titulo} ({link_boe})
         CONTEXTO: {contexto}
-        
         IMPORTANTE: NO USES FORMATO MARKDOWN. NO USES '###', NI '**', NI '####'.
         Escribe en texto plano, usando guiones para listas.
-        
         Responde con 3 bloques:
         1. REQUISITOS TÉCNICOS OCULTOS
         2. EXCLUSIONES CLAVE
         3. ESTRATEGIA PARA GANAR
         """
-        
-        chat = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[{"role": "user", "content": prompt}]
-        )
+        chat = client.chat.completions.create(model="llama-3.3-70b-versatile", messages=[{"role": "user", "content": prompt}])
         return chat.choices[0].message.content
     except Exception as e: return f"Error en la investigación: {str(e)}"
 
-# --- FUNCIÓN DE LIMPIEZA DE FORMATO (CRUCIAL PARA PDF) ---
 def clean_format(text):
     if not isinstance(text, str): return str(text)
-    
-    # 1. Eliminar Markdown (###, **, etc)
-    text = re.sub(r'#{1,6}\s?', '', text) # Quita encabezados markdown
-    text = re.sub(r'\*\*(.*?)\*\*', r'\1', text) # Quita negritas
-    text = re.sub(r'\*(.*?)\*', r'\1', text) # Quita cursivas
-    
-    # 2. Reemplazar caracteres raros o emojis que rompen FPDF
-    replacements = {
-        '—': '-', '–': '-', '“': '"', '”': '"', '’': "'", '‘': "'",
-        '€': 'EUR', '•': '-', '…': '...',
-        '🔍': '->', '⚠️': '(!)', '💡': '(IDEA)', '✅': '(SI)'
-    }
+    text = re.sub(r'#{1,6}\s?', '', text) 
+    text = re.sub(r'\*\*(.*?)\*\*', r'\1', text) 
+    text = re.sub(r'\*(.*?)\*', r'\1', text) 
+    replacements = {'—': '-', '–': '-', '“': '"', '”': '"', '’': "'", '‘': "'", '€': 'EUR', '•': '-', '…': '...', '🔍': '->', '⚠️': '(!)', '💡': '(IDEA)', '✅': '(SI)'}
     for k, v in replacements.items(): text = text.replace(k, v)
-    
-    # 3. Codificación Latin-1 segura
     return text.encode('latin-1', 'replace').decode('latin-1')
 
-# --- GENERADOR PDF CON LOGO ---
 class PDFReport(FPDF):
     def header(self):
-        # LOGO (Busca el archivo local 'logo.png')
         if os.path.exists(LOGO_FILE):
-            try:
-                # Ajusta las coordenadas (x,y) y el ancho (w) según tu imagen
-                self.image(LOGO_FILE, x=10, y=8, w=40) 
+            try: self.image(LOGO_FILE, x=10, y=8, w=40) 
             except: pass
-        
-        # TEXTO CABECERA (Alineado a la derecha para no pisar el logo)
         self.set_font('Arial', 'B', 10)
         self.set_text_color(100, 100, 100)
         self.cell(0, 10, 'TITAN X | INFORME DE ESTRATEGIA', 0, 1, 'R')
-        self.ln(15) # Espacio extra para que no se solape con el logo
-
+        self.ln(15)
     def footer(self):
         self.set_y(-15)
         self.set_font('Arial', 'I', 8)
@@ -255,37 +236,25 @@ def generar_pdf(titulo, resumen, requisitos, investigacion):
     pdf = PDFReport()
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=15)
-    
-    # TITULO
     pdf.set_font("Arial", 'B', 16)
     pdf.set_text_color(15, 23, 42)
     pdf.multi_cell(0, 8, clean_format(titulo.upper()), align='L')
     pdf.ln(5)
-    
-    pdf.set_draw_color(6, 182, 212) # Color Cyan Accent
+    pdf.set_draw_color(6, 182, 212)
     pdf.set_line_width(0.5)
     pdf.line(10, pdf.get_y(), 200, pdf.get_y())
     pdf.ln(8)
-    
-    # SECCIONES
-    sections = [
-        ("RESUMEN EJECUTIVO", resumen),
-        ("REQUISITOS OFICIALES", requisitos),
-        ("AUDITORIA ESTRATEGICA (IA)", investigacion)
-    ]
-    
+    sections = [("RESUMEN EJECUTIVO", resumen), ("REQUISITOS OFICIALES", requisitos), ("AUDITORIA ESTRATEGICA (IA)", investigacion)]
     for title, content in sections:
         pdf.set_font("Arial", 'B', 12)
         pdf.set_fill_color(241, 245, 249)
         pdf.set_text_color(0, 0, 0)
         pdf.cell(0, 8, clean_format(title), ln=True, fill=True)
         pdf.ln(2)
-        
         pdf.set_font("Arial", '', 10)
         pdf.set_text_color(50, 50, 50)
         pdf.multi_cell(0, 6, clean_format(content))
         pdf.ln(5)
-        
     return pdf.output(dest='S').encode('latin-1')
 
 def get_tag_bg(tag):
@@ -297,71 +266,65 @@ def get_tag_bg(tag):
     return "background: #475569;"
 
 # ==============================================================================
-#  IMAGENES INTELIGENTES (LÓGICA MEJORADA)
+#  IMÁGENES CORREGIDAS (IDS ESTÁTICOS DE UNSPLASH)
 # ==============================================================================
 def get_img_url(sector, titulo):
-    # Convertimos todo a minúsculas para analizar el texto
     text_content = (str(sector) + " " + str(titulo)).lower()
     
-    # --- DICCIONARIO DE IMÁGENES (Prioridad Alta a Baja) ---
-    # NOTA: Todas llevan '&w=800&fit=crop' para optimizar carga y encuadre
+    # URL BASE DE UNSPLASH (Optimizada para tarjetas)
+    # Usamos IDs específicos para evitar errores 404
+    base_params = "?auto=format&fit=crop&w=800&q=80"
     
-    # 1. EMERGENCIAS / DANA (Prioridad Máxima)
+    # 1. EMERGENCIAS / DANA (Prioridad)
     if any(x in text_content for x in ['dana', 'catastrofe', 'emergencia', 'inundaci']): 
-        return "https://images.unsplash.com/photo-1585672850976-1f31f9486c8f?auto=format&fit=crop&w=800&q=80"
+        return f"https://images.unsplash.com/photo-1633511090164-b43840ea1607{base_params}" # Inundacion/Rescate
 
-    # 2. MOVILIDAD ELÉCTRICA (MOVES, Coches)
-    if any(x in text_content for x in ['moves', 'coche', 'vehiculo', 'puntos de recarga', 'automocion', 'transporte']): 
-        return "https://images.unsplash.com/photo-1593941707882-a5bba14938c7?auto=format&fit=crop&w=800&q=80"
-
-    # 3. ENERGÍA EÓLICA (Tu foto solicitada)
+    # 2. ENERGÍA EÓLICA (Tu foto)
     if any(x in text_content for x in ['eolic', 'viento', 'aerogenerador', 'wind']): 
-        return "https://images.unsplash.com/photo-1548337138-e87d889cc369?auto=format&fit=crop&w=800&q=80"
+        return f"https://images.unsplash.com/photo-1548337138-e87d889cc369{base_params}"
 
-    # 4. ENERGÍA SOLAR / FOTOVOLTAICA
+    # 3. ENERGÍA SOLAR / FOTOVOLTAICA
     if any(x in text_content for x in ['solar', 'fotov', 'placas']): 
-        return "https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&w=800&q=80"
+        return f"https://images.unsplash.com/photo-1509391366360-2e959784a276{base_params}"
 
-    # 5. HIDROELÉCTRICA / AGUA
-    if any(x in text_content for x in ['hidro', 'agua', 'embalse', 'riego']): 
-        return "https://images.unsplash.com/photo-1583306346296-6e7e44d852a4?auto=format&fit=crop&w=800&q=80"
+    # 4. MOVILIDAD / MOVES / COCHES
+    if any(x in text_content for x in ['moves', 'coche', 'vehiculo', 'puntos de recarga', 'automocion']): 
+        return f"https://images.unsplash.com/photo-1617788138017-80ad40651399{base_params}" # Coche electrico cargando
 
-    # 6. INDUSTRIA / FÁBRICAS
+    # 5. SALUD / SOCIO-SANITARIO
+    if any(x in text_content for x in ['salud', 'sanitar', 'farma', 'medic', 'hospital', 'cancer']): 
+        return f"https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7{base_params}" # Médicos/Laboratorio
+
+    # 6. INDUSTRIA / CADENA DE VALOR
     if any(x in text_content for x in ['indust', 'manufac', 'fabrica', 'maquina', 'cadena de valor']): 
-        return "https://images.unsplash.com/photo-1565514020126-db9f96b9b3df?auto=format&fit=crop&w=800&q=80"
+        return f"https://images.unsplash.com/photo-1581091226825-a6a2a5aee158{base_params}" # Fábrica/Robot
 
-    # 7. SALUD / INVESTIGACIÓN / BIOTEC
-    if any(x in text_content for x in ['salud', 'farma', 'medic', 'hospital', 'sanitar', 'investig']): 
-        return "https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&w=800&q=80"
+    # 7. EDUCACIÓN / FORMACIÓN / LECTORADOS / BECAS
+    if any(x in text_content for x in ['educa', 'formaci', 'universidad', 'beca', 'lector', 'curso']): 
+        return f"https://images.unsplash.com/photo-1524178232363-1fb2b075b655{base_params}" # Clase/Conferencia
 
-    # 8. ARQUITECTURA / VIVIENDA / CONSTRUCCIÓN
-    if any(x in text_content for x in ['arqui', 'vivienda', 'edific', 'rehabilit', 'urban']): 
-        return "https://images.unsplash.com/photo-1486325212027-8081e485255e?auto=format&fit=crop&w=800&q=80"
-
-    # 9. EDUCACIÓN / UNIVERSIDAD / LECTORADOS
-    if any(x in text_content for x in ['educa', 'formaci', 'universidad', 'beca', 'lector']): 
-        return "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=800&q=80"
-
-    # 10. DIGITAL / IA / SOFTWARE
+    # 8. DIGITAL / IA / SOFTWARE
     if any(x in text_content for x in ['digital', 'ia ', 'softw', 'tic', 'cyber', 'ciber']): 
-        return "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80"
+        return f"https://images.unsplash.com/photo-1451187580459-43490279c0fa{base_params}"
 
-    # 11. AGRO / CAMPO / MARÍTIMO
-    if any(x in text_content for x in ['mar', 'naval', 'barco']): 
-        return "https://images.unsplash.com/photo-1598194501777-edbff942e501?auto=format&fit=crop&w=800&q=80"
+    # 9. AGRO / CAMPO
     if any(x in text_content for x in ['agro', 'campo', 'forest', 'ganad', 'rural']): 
-        return "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?auto=format&fit=crop&w=800&q=80"
+        return f"https://images.unsplash.com/photo-1625246333195-78d9c38ad449{base_params}"
 
-    # 12. TERCER SECTOR / SOCIAL / ONG
-    if any(x in text_content for x in ['social', 'ong', 'tercer sector', 'asoc', 'inclusion']): 
-        return "https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&w=800&q=80"
-    
-    # 13. TURISMO
+    # 10. TURISMO
     if any(x in text_content for x in ['turis', 'hotel', 'viaje', 'hostel']):
-        return "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
+        return f"https://images.unsplash.com/photo-1551882547-ff40c63fe5fa{base_params}"
 
-    # --- FALLBACK (Si no encuentra nada) ---
-    return "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80"
+    # 11. CONSTRUCCIÓN / VIVIENDA
+    if any(x in text_content for x in ['construc', 'vivienda', 'rehab', 'edific']):
+        return f"https://images.unsplash.com/photo-1503387762-592deb58ef4e{base_params}"
+
+    # 12. MARITIMO / NAVAL
+    if any(x in text_content for x in ['mar', 'naval', 'barco', 'portuari']): 
+        return f"https://images.unsplash.com/photo-1559620076-78b105d15c8e{base_params}"
+
+    # DEFAULT
+    return f"https://images.unsplash.com/photo-1497215728101-856f4ea42174{base_params}" # Oficina Business
 
 # ==============================================================================
 # 5. UI PRINCIPAL
@@ -372,10 +335,7 @@ if check_password():
         
         # --- SIDEBAR ---
         with st.sidebar:
-            # MOSTRAR EL LOGO EN LA BARRA LATERAL TAMBIÉN
-            if os.path.exists(LOGO_FILE):
-                st.image(LOGO_FILE, use_container_width=True)
-            
+            if os.path.exists(LOGO_FILE): st.image(LOGO_FILE, use_container_width=True)
             st.markdown("### 🎛️ FILTROS")
             st.markdown("---")
             query = st.text_input("Búsqueda Textual", placeholder="Ej: Digitalización...", key="search_bar")
@@ -399,7 +359,6 @@ if check_password():
         with c_hero1:
             st.markdown("<div class='titan-header'>RADAR <span style='color:var(--primary-btn)'>TITAN</span></div>", unsafe_allow_html=True)
             st.markdown("<p style='font-size:1.1rem; margin-top:-10px;'>Detección inteligente de fondos públicos.</p>", unsafe_allow_html=True)
-        
         st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
 
         # --- KPIs ---
@@ -427,7 +386,7 @@ if check_password():
                     prob_counts = filtered_df.iloc[:, 9].value_counts().reset_index()
                     prob_counts.columns = ['Probabilidad', 'Count']
                     fig2 = px.bar(prob_counts, x='Probabilidad', y='Count', color='Probabilidad', color_discrete_sequence=px.colors.qualitative.Bold)
-                    fig2.update_layout(title_text="Análisis de Probabilidad", height=350, margin=dict(l=20, r=20, t=40, b=20), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", showlegend=False)
+                    fig2.update_layout(title_text="Análisis de Probabilidad", height=350, margin=dict(l=20, r=20, t=40, b=20), paper_bgcolor="rgba(0,0,0,0)", showlegend=False)
                     st.plotly_chart(fig2, use_container_width=True)
 
         st.markdown("---")
@@ -450,17 +409,23 @@ if check_password():
                 link_boe = str(row.iloc[0])
                 img_url = get_img_url(sector, titulo)
                 
-                # NOTA: El color del badge ahora es solo para el borde/texto, el fondo lo controla el CSS
-                badge_color = "#10b981" if "ALTA" in probabilidad else ("#f59e0b" if "MEDIA" in probabilidad else "#94a3b8")
+                # Definir color del borde de la burbuja según probabilidad
+                badge_border = "rgba(16, 185, 129, 0.5)" if "ALTA" in probabilidad else ("rgba(245, 158, 11, 0.5)" if "MEDIA" in probabilidad else "rgba(148, 163, 184, 0.5)")
                 
+                # HTML DE LA TARJETA (MODIFICADO: BURBUJA DENTRO DE LA IMAGEN)
                 card_html = f"""
                 <div class="titan-card">
-                    <!-- BURBUJA CON ESTILO GLASSMORPHISM (CSS CLASE .card-badge) -->
-                    <div class="card-badge" style="border-color:{badge_color}; color:{badge_color} !important;">● {probabilidad}</div>
-                    <div class="card-img-container"><img src="{img_url}" class="card-img"><div class="card-overlay"></div></div>
+                    <div class="card-img-container">
+                        <img src="{img_url}" class="card-img">
+                        <div class="card-overlay"></div>
+                        <!-- LA BURBUJA ESTÁ AHORA AQUÍ DENTRO PARA ALINEARSE BIEN -->
+                        <div class="card-badge" style="border-color:{badge_border};">● {probabilidad}</div>
+                    </div>
                     <div class="card-body">
-                        <div class="card-title" title="{titulo}">{titulo}</div>
-                        <div style="margin-bottom:10px;">{tags_html}</div>
+                        <div>
+                            <div class="card-title" title="{titulo}">{titulo}</div>
+                            <div style="margin-bottom:10px;">{tags_html}</div>
+                        </div>
                         <div class="specs-grid">
                             <div class="spec-item"><span class="spec-label">Cuantía Disp.</span><span class="spec-value">{cuantia}</span></div>
                             <div class="spec-item"><span class="spec-label">Cierre</span><span class="spec-value">{plazo}</span></div>
@@ -471,10 +436,8 @@ if check_password():
                 with cols[i % 2]:
                     st.markdown(card_html, unsafe_allow_html=True)
                     
-                    # --- INTERACCIÓN ---
                     with st.expander("🔬 INVESTIGACIÓN PROFUNDA & PDF"):
                         key_investigacion = f"investigacion_{index}"
-                        
                         if key_investigacion not in st.session_state:
                             st.info("💡 Pulsa para analizar las Bases Oficiales en tiempo real.")
                             if st.button("🔍 BUSCAR BASES REALES", key=f"ai_btn_{index}", use_container_width=True):
@@ -485,17 +448,8 @@ if check_password():
                         else:
                             st.success("✅ Auditoría Completada")
                             st.markdown(f"<div style='font-size:0.9rem; color:#475569'>{st.session_state[key_investigacion]}</div>", unsafe_allow_html=True)
-                            
                             pdf_data = generar_pdf(titulo, analisis_ia, requisitos_txt, st.session_state[key_investigacion])
-                            
-                            st.download_button(
-                                label="📥 DESCARGAR INFORME PDF OFICIAL",
-                                data=pdf_data,
-                                file_name=f"Informe_Titan_{index}.pdf",
-                                mime="application/pdf",
-                                use_container_width=True,
-                                key=f"pdf_btn_{index}"
-                            )
+                            st.download_button(label="📥 DESCARGAR INFORME PDF OFICIAL", data=pdf_data, file_name=f"Informe_Titan_{index}.pdf", mime="application/pdf", use_container_width=True, key=f"pdf_btn_{index}")
 
                     with st.expander("🔻 ANÁLISIS PREVIO", expanded=False):
                         st.markdown(f"""<div style='background:var(--bg-app); padding:15px; border-radius:8px; border-left:3px solid var(--accent); color:var(--text-secondary);'>
